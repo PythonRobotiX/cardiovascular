@@ -1,0 +1,124 @@
+{
+  "moduleTemplate": {
+    "name": "Stress_Reduction",
+    "sections": {
+      "purpose": {
+        "clinicalProblem": {
+          "clinicalIntent": "Evaluate stress reduction techniques (transcendental meditation, breathing control, yoga) as adjunct interventions for BP management",
+          "whenToUse": "Adults with or without hypertension seeking non-pharmacological adjuncts to lifestyle or medication interventions for elevated BP or hypertension",
+          "decisionOrAction": "Recommend stress reduction as adjunct therapy with weak recommendation (COR 2b) based on moderate-quality RCT evidence (LOE B-R)"
+        }
+      },
+      "userFlow": {
+        "navigationPath": [
+          { "view": "StressReductionStartView", "purpose": "Entry point for stress reduction assessment" },
+          { "view": "PatientAssessmentView", "purpose": "Assess current stress levels and BP status" },
+          { "view": "TechniqueSelectionView", "purpose": "Select technique: transcendental meditation, breathing control, or yoga" },
+          { "view": "ContraindicationCheckView", "purpose": "Screen for any contraindications to stress reduction techniques" },
+          { "view": "RecommendationDisplayView", "purpose": "Show COR 2b, LOE B-R recommendation with phrasing" },
+          { "view": "AdjunctStatusView", "purpose": "Confirm use alongside lifestyle/medication interventions" },
+          { "view": "ImplementationPlanView", "purpose": "Provide guidance on technique frequency and duration" },
+          { "view": "FollowUpTrackingView", "purpose": "Schedule BP re-assessment after stress reduction implementation" }
+        ]
+      },
+      "inputDataModel": {
+        "structName": "StressReductionInputModel",
+        "requiredFields": {
+          "hasHypertension": { "type": "Bool?", "validation": "true/false" },
+          "techniqueType": { "type": "String?", "validation": "Must be: transcendental_meditation, breathing_control, yoga" }
+        },
+        "optionalFields": {
+          "currentBP_systolic": { "type": "Int?", "validation": "70-250" },
+          "currentBP_diastolic": { "type": "Int?", "validation": "40-150" },
+          "onLifestyleInterventions": { "type": "Bool?", "options": ["true", "false"] },
+          "onMedications": { "type": "Bool?", "options": ["true", "false"] },
+          "stressLevel": { "type": "String?", "options": ["low", "moderate", "high"] }
+        },
+        "validationRules": [
+          "Technique type must be selected",
+          "BP values if provided must be within valid range",
+          "Patient must be adult (implied by guideline population)"
+        ]
+      },
+      "logicEngine": {
+        "rules": [
+          "Assign COR 2b (WEAK): Benefit ≥ Risk",
+          "Assign LOE B-R (Moderate-quality evidence from 1 or more RCTs or meta-analyses of moderate-quality RCTs)",
+          "Apply suggested phrasing: 'may be reasonable'",
+          "Position as adjunct therapy (not first-line)",
+          "Apply to both hypertensive and normotensive adults",
+          "Recommend alongside lifestyle or medication interventions, not as replacement",
+          "Transcendental meditation, breathing control, and yoga are equally classified under same COR/LOE"
+        ],
+        "thresholdsExample": {
+          "categories": [
+            { 
+              "name": "Stress Reduction - Transcendental Meditation", 
+              "cor": "2b", 
+              "strength": "WEAK", 
+              "loe": "B-R",
+              "population": "Adults with or without hypertension",
+              "phrasing": "may be reasonable",
+              "role": "adjunct to lifestyle or medication interventions"
+            },
+            { 
+              "name": "Stress Reduction - Breathing Control/Yoga", 
+              "cor": "2b", 
+              "strength": "WEAK", 
+              "loe": "B-R",
+              "population": "Adults with or without hypertension",
+              "phrasing": "may be reasonable",
+              "role": "adjunct to lifestyle or medication interventions"
+            }
+          ]
+        }
+      },
+      "outputModel": {
+        "structName": "StressReductionOutputModel",
+        "fields": {
+          "category": { "type": "String", "description": "'Stress Reduction (Transcendental Meditation)' or 'Stress Reduction (Breathing Control/Yoga)'" },
+          "cor": { "type": "String", "value": "2b" },
+          "strength": { "type": "String", "value": "WEAK" },
+          "loe": { "type": "String", "value": "B-R" },
+          "suggestedPhrasing": { "type": "String", "value": "may be reasonable" },
+          "recommendation": { "type": "String", "description": "Full recommendation text" },
+          "role": { "type": "String", "value": "adjunct to lifestyle or medication interventions" },
+          "population": { "type": "String", "value": "Adults with or without hypertension" }
+        },
+        "constraints": ["deterministic", "renderable", "safe"]
+      },
+      "crisisRules": {
+        "thresholds": {
+          "sbp": "N/A - stress reduction is not for acute crisis",
+          "dbp": "N/A"
+        },
+        "symptomsToAsk": [],
+        "escalationLogic": {
+          "ifAnySymptomPresent": "N/A - stress reduction is adjunctive, not emergency intervention",
+          "ifNoSymptoms": "N/A"
+        },
+        "appDisplay": {
+          "screenType": "Standard recommendation display",
+          "button": "N/A",
+          "behavior": "Normal routing - position as adjunct only"
+        }
+      },
+      "nextStepRouting": {
+        "providerSuggestion": "Consider stress reduction as adjunct to lifestyle or medication interventions; not a replacement for established treatments",
+        "followUpTiming": "Re-assess BP after 8-12 weeks of consistent stress reduction practice",
+        "repeatMeasurement": "Monitor BP periodically to evaluate adjunct benefit",
+        "navigatorEscalation": "Flag if patient attempts to use stress reduction as monotherapy for hypertension without lifestyle/medication interventions",
+        "documentation": "Log stress reduction technique recommended, COR 2b LOE B-R, adjunct status"
+      },
+      "tags": {
+        "acute": false,
+        "chronic": true,
+        "screening": false,
+        "diagnosis": false,
+        "management": true,
+        "priority": "low",
+        "topic": "hypertension_stress_reduction"
+      }
+    }
+  }
+}

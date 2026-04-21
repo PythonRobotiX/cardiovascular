@@ -1,0 +1,112 @@
+{
+  "moduleTemplate": {
+    "name": "Hypertension_Initial_Assessment_Monitoring",
+    "sections": {
+      "purpose": {
+        "clinicalProblem": {
+          "clinicalIntent": "Establish baseline CVD risk and inform management decisions in adults with new hypertension diagnosis",
+          "whenToUse": "Initial diagnosis of hypertension, annual follow-up assessments, medication monitoring",
+          "decisionOrAction": "Comprehensive assessment plan including history, physical exam, laboratory testing, and cardiac evaluation"
+        }
+      },
+      "userFlow": {
+        "navigationPath": [
+          { "view": "HTNAssessmentStartView", "purpose": "Entry point for hypertension initial assessment" },
+          { "view": "MedicalHistoryView", "purpose": "Collect comprehensive medical history" },
+          { "view": "PhysicalExamView", "purpose": "Perform physical examination" },
+          { "view": "BaselineLaboratoryView", "purpose": "Order routine laboratory tests" },
+          { "view": "AnnualLaboratoryView", "purpose": "Schedule annual laboratory monitoring" },
+          { "view": "ECGView", "purpose": "Order electrocardiography for subclinical CVD" },
+          { "view": "AdvancedCardiacView", "purpose": "Consider cardiac biomarkers, echocardiography, CAC scoring" },
+          { "view": "RiskAssessmentView", "purpose": "Display refined CVD risk estimation" }
+        ]
+      },
+      "inputDataModel": {
+        "structName": "HypertensionAssessmentInputModel",
+        "requiredFields": {
+          "diagnosisStatus": { "type": "String?", "validation": "new diagnosis / existing diagnosis" },
+          "age": { "type": "Int?", "validation": "18+" },
+          "hasMedicalHistory": { "type": "Bool?" }
+        },
+        "optionalFields": {
+          "priorLaboratoryResults": { "type": "String?", "options": ["available", "not available"] },
+          "cardiacSymptoms": { "type": "String?", "options": ["chest pain", "dyspnea", "palpitations", "none"] },
+          "onAntihypertensiveMeds": { "type": "Bool?" }
+        },
+        "validationRules": [
+          "Age >= 18 years",
+          "Diagnosis status required for initial assessment",
+          "Annual labs required if on therapy"
+        ]
+      },
+      "logicEngine": {
+        "rules": [
+          "For new diagnosis → order comprehensive medical history, physical exam, routine laboratory testing",
+          "Baseline labs establish CVD risk and inform management decisions",
+          "Annual laboratory monitoring for: therapy adverse effects (serum electrolytes), kidney disease progression (UACR, eGFR), CVD risk changes (lipid profile)",
+          "ECG to detect subclinical CVD (e.g., left ventricular hypertrophy)",
+          "Cardiac biomarkers, echocardiography, CAC scoring for refined risk estimation",
+          "Monitor for prevalence and extent of subclinical CVD"
+        ],
+        "thresholdsExample": {
+          "laboratoryTests": [
+            { "test": "Serum electrolytes", "frequency": "at least annually", "purpose": "monitor adverse effects of therapies" },
+            { "test": "Urine albumin-to-creatinine ratio (UACR)", "frequency": "at least annually", "purpose": "assess kidney disease progression" },
+            { "test": "eGFR (creatinine-based or cystatin-C based)", "frequency": "at least annually", "purpose": "assess kidney disease progression" },
+            { "test": "Lipid profile", "frequency": "at least annually", "purpose": "monitor changes in predicted CVD risk" }
+          ],
+          "cardiacAssessments": [
+            { "test": "Electrocardiography (ECG)", "purpose": "detect subclinical CVD (e.g., left ventricular hypertrophy)" },
+            { "test": "Cardiac biomarkers", "purpose": "refined risk estimation for CVD" },
+            { "test": "Echocardiography", "purpose": "refined risk estimation for CVD, assess subclinical CVD" },
+            { "test": "Coronary artery calcium (CAC) scoring", "purpose": "refined risk estimation for CVD, assess subclinical CVD extent" }
+          ]
+        }
+      },
+      "outputModel": {
+        "structName": "HypertensionAssessmentOutputModel",
+        "fields": {
+          "category": { "type": "String", "description": "e.g., 'Initial CVD Risk Assessment Complete'" },
+          "baselineCvdRisk": { "type": "String", "values": ["low", "moderate", "high"] },
+          "recommendedLabs": { "type": "[String]", "description": "List of laboratory tests to order" },
+          "annualMonitoringSchedule": { "type": "[String]", "description": "Tests requiring annual repetition" },
+          "cardiacTestingRecommended": { "type": "[String]", "description": "ECG, biomarkers, echocardiography, CAC scoring as indicated" },
+          "subclinicalCvdDetected": { "type": "Bool" }
+        },
+        "constraints": ["deterministic", "renderable", "safe"]
+      },
+      "crisisRules": {
+        "thresholds": {
+          "sbp": "N/A - assessment module only",
+          "dbp": "N/A"
+        },
+        "symptomsToAsk": [],
+        "escalationLogic": {
+          "ifAnySymptomPresent": "N/A",
+          "ifNoSymptoms": "N/A"
+        },
+        "appDisplay": {
+          "screenType": "Standard assessment display",
+          "button": "N/A",
+          "behavior": "Normal routing to management"
+        }
+      },
+      "nextStepRouting": {
+        "providerSuggestion": "Initiate antihypertensive therapy based on baseline CVD risk assessment",
+        "followUpTiming": "Repeat laboratory testing at least annually",
+        "repeatMeasurement": "Annual lipid profile, electrolytes, UACR, eGFR",
+        "navigatorEscalation": "Alert provider if subclinical CVD detected on ECG or advanced imaging",
+        "documentation": "Log baseline CVD risk, laboratory results, cardiac findings to health record"
+      },
+      "tags": {
+        "acute": false,
+        "chronic": true,
+        "screening": true,
+        "diagnosis": false,
+        "management": true,
+        "priority": "high",
+        "topic": "hypertension_assessment"
+      }
+    }
+  }
+}

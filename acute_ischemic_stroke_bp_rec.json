@@ -1,0 +1,118 @@
+{
+  "moduleTemplate": {
+    "name": "Acute_Ischemic_Stroke_BP_Recommendations",
+    "sections": {
+      "purpose": {
+        "clinicalProblem": {
+          "clinicalIntent": "Guide blood pressure management in acute ischemic stroke to optimize outcomes and prevent harm",
+          "whenToUse": "Acute ischemic stroke presentation, before thrombolytics/endovascular treatment, post-reperfusion monitoring",
+          "decisionOrAction": "BP target selection, treatment initiation timing, complication prevention"
+        }
+      },
+      "userFlow": {
+        "navigationPath": [
+          { "view": "StrokePresentationView", "purpose": "Entry point for acute ischemic stroke assessment" },
+          { "view": "BPAssessmentView", "purpose": "Measure initial BP and assess hypovolemia/hypotension" },
+          { "view": "TreatmentEligibilityView", "purpose": "Determine IV thrombolytic or endovascular treatment eligibility" },
+          { "view": "RecommendationSelectionView", "purpose": "Match patient presentation to appropriate COR/LOE pathway" },
+          { "view": "BPInterventionView", "purpose": "Execute BP lowering or maintenance protocol" },
+          { "view": "MonitoringView", "purpose": "Monitor BP for 24-72 hours post-intervention" },
+          { "view": "OutcomeAssessmentView", "purpose": "Evaluate functional outcomes and complication prevention" },
+          { "view": "DocumentationView", "purpose": "Log recommendation applied and outcomes" }
+        ]
+      },
+      "inputDataModel": {
+        "structName": "AcuteIschemicStrokeInputModel",
+        "requiredFields": {
+          "systolicBP": { "type": "Int?", "validation": "Measure initial presenting BP" },
+          "diastolicBP": { "type": "Int?", "validation": "Measure initial presenting BP" },
+          "receivedIVThrombolytics": { "type": "Bool?", "validation": "Yes/No" },
+          "receivedEndovascularTreatment": { "type": "Bool?", "validation": "Yes/No" },
+          "hasComorbidConditionRequiringAntihypertensives": { "type": "Bool?", "validation": "Yes/No" },
+          "successfulReperfusion": { "type": "Bool?", "validation": "For endovascular patients" }
+        },
+        "optionalFields": {
+          "timeSinceOnset": { "type": "Int?", "unit": "hours" },
+          "hypovolemiaStatus": { "type": "Bool?", "options": ["present", "absent"] },
+          "hypotensionStatus": { "type": "Bool?", "options": ["present", "absent"] },
+          "largeVesselOcclusion": { "type": "Bool?" }
+        },
+        "validationRules": [
+          "BP must be measured before treatment decision",
+          "Treatment eligibility determines COR pathway",
+          "Reperfusion status required for post-procedure recommendations"
+        ]
+      },
+      "logicEngine": {
+        "rules": [
+          "If hypotension/hypovolemia present → COR 1, LOE C-LD: correct to maintain systemic perfusion",
+          "If eligible for IV thrombolytics AND elevated BP → COR 1, LOE B-NR: lower BP to SBP <185, DBP <110 before treatment, maintain <180/105 for 24h post",
+          "If undergoing endovascular treatment → COR 2a, LOE B-NR: reasonable to maintain BP ≤180/105 during and 24h after",
+          "If BP ≥220/120, no thrombolytics/endovascular, no comorbid conditions requiring treatment → COR 2b, LOE C-LD: might be reasonable to lower BP by 15% in first 24h",
+          "If BP <220/120, no thrombolytics/endovascular, no comorbid conditions → COR 3 No Benefit, LOE A: initiating/reinitiating treatment in first 48-72h not effective to prevent death/disability",
+          "If successful brain reperfusion with endovascular treatment for large vessel occlusion → COR 3 Harm, LOE A: lowering SBP <140 within 24-72h worsens functional outcome"
+        ],
+        "thresholdsExample": {
+          "categories": [
+            { "name": "Hypotension/Hypovolemia Correction", "sbp": "N/A", "dbp": "N/A", "cor": "1", "loe": "C-LD" },
+            { "name": "IV Thrombolytics BP Prep", "sbp_target": "<185", "dbp_target": "<110", "maintenance": "<180/105 for 24h", "cor": "1", "loe": "B-NR" },
+            { "name": "Endovascular Treatment BP", "sbp_target": "≤180", "dbp_target": "≤105", "duration": "During + 24h post", "cor": "2a", "loe": "B-NR" },
+            { "name": "Severe BP without Treatment", "sbp_threshold": "≥220", "dbp_threshold": "≥120", "intervention": "Lower by 15% in first 24h", "cor": "2b", "loe": "C-LD" },
+            { "name": "Mild-Moderate BP without Treatment", "sbp": "<220", "dbp": "<120", "action": "Do NOT initiate/reinitiate treatment 48-72h", "cor": "3 No Benefit", "loe": "A" },
+            { "name": "Post-Reperfusion Harm Prevention", "sbp_warning": "<140", "timeframe": "24-72h post-reperfusion", "outcome": "Worsens functional outcome", "cor": "3 Harm", "loe": "A" }
+          ]
+        }
+      },
+      "outputModel": {
+        "structName": "AcuteIschemicStrokeOutputModel",
+        "fields": {
+          "category": { "type": "String", "description": "e.g., 'IV Thrombolytics BP Preparation'" },
+          "cor": { "type": "String", "values": ["1", "2a", "2b", "3 No Benefit", "3 Harm"] },
+          "loe": { "type": "String", "values": ["A", "B-NR", "C-LD"] },
+          "recommendation": { "type": "String", "description": "Full recommendation text" },
+          "bpTargetSystolic": { "type": "Int?", "condition": "If BP lowering indicated" },
+          "bpTargetDiastolic": { "type": "Int?", "condition": "If BP lowering indicated" },
+          "timeframe": { "type": "String", "description": "e.g., 'First 24 hours', '48-72 hours post-stroke'" },
+          "isHarm": { "type": "Bool", "description": "True for COR 3 Harm" }
+        },
+        "constraints": ["deterministic", "renderable", "safe"]
+      },
+      "crisisRules": {
+        "thresholds": {
+          "sbp": "≥220",
+          "dbp": "≥120"
+        },
+        "symptomsToAsk": [
+          "Stroke symptoms (speech difficulty, weakness, vision changes)",
+          "Signs of hypoperfusion",
+          "Neurological deterioration"
+        ],
+        "escalationLogic": {
+          "ifAnySymptomPresent": "Emergency BP management, consider IV thrombolytics if within window",
+          "ifNoSymptoms": "Monitor closely, consider COR 2b pathway (15% reduction over 24h)"
+        },
+        "appDisplay": {
+          "screenType": "Stroke alert with BP crisis protocol",
+          "button": "Emergency BP lowering protocol",
+          "behavior": "Route to acute stroke management pathway"
+        }
+      },
+      "nextStepRouting": {
+        "providerSuggestion": "Follow COR-specific BP target: Neurology consultation for thrombolytic/endovascular eligibility",
+        "followUpTiming": "Monitor BP every 15 min during intervention, then hourly for 24h, then per stroke unit protocol",
+        "repeatMeasurement": "Check BP before each treatment decision point; re-evaluate at 24h, 48h, and 72h post-stroke",
+        "navigatorEscalation": "Alert stroke team if BP exceeds targets or if COR 3 Harm criteria identified (SBP <140 post-reperfusion)",
+        "documentation": "Log BP measurements, COR/LOE applied, intervention performed, and 90-day functional outcome"
+      },
+      "tags": {
+        "acute": true,
+        "chronic": false,
+        "screening": false,
+        "diagnosis": true,
+        "management": true,
+        "priority": "critical",
+        "topic": "acute_ischemic_stroke"
+      }
+    }
+  }
+}

@@ -1,0 +1,109 @@
+{
+  "moduleTemplate": {
+    "name": "Hypertensive_Emergencies_Severe_HTN",
+    "sections": {
+      "purpose": {
+        "clinicalProblem": {
+          "clinicalIntent": "Provide evidence-based recommendations for managing hypertensive emergencies and severe hypertension in nonpregnant, nonstroke patients",
+          "whenToUse": "Adult patients with BP >180 and/or >120 mm Hg with or without evidence of acute target organ damage",
+          "decisionOrAction": "ICU admission determination, BP reduction targets, medication route selection, harm prevention"
+        }
+      },
+      "userFlow": {
+        "navigationPath": [
+          { "view": "HTNEmergencyStartView", "purpose": "Entry point - assess BP and symptoms" },
+          { "view": "TargetOrganDamageAssessmentView", "purpose": "Evaluate for acute target organ damage" },
+          { "view": "CompellingConditionCheckView", "purpose": "Identify conditions like acute aortic syndrome/dissection" },
+          { "view": "ICURoutingView", "purpose": "Determine need for intensive care admission" },
+          { "view": "BPReductionStrategyView", "purpose": "Select appropriate BP reduction protocol based on condition" },
+          { "view": "MedicationRouteSelectionView", "purpose": "Choose oral vs parenteral vs no additional therapy" },
+          { "view": "MonitoringScheduleView", "purpose": "Display BP monitoring timeline (1 hour, 2-6 hours, 24-48 hours)" },
+          { "view": "HarmPreventionAlertView", "purpose": "Warn against inappropriate BP reduction when contraindicated" }
+        ]
+      },
+      "inputDataModel": {
+        "structName": "HypertensiveEmergencyInputModel",
+        "requiredFields": {
+          "systolic": { "type": "Int?", "validation": ">180 triggers emergency protocol" },
+          "diastolic": { "type": "Int?", "validation": ">120 triggers emergency protocol" }
+        },
+        "optionalFields": {
+          "targetOrganDamage": { "type": "Bool?", "description": "Evidence of acute target organ damage" },
+          "compellingCondition": { "type": "String?", "options": ["acute aortic syndrome", "acute aortic dissection", "none"] },
+          "hospitalizedForNoncardiacCondition": { "type": "Bool?" },
+          "pregnant": { "type": "Bool?", "description": "Exclusion - refer to Section 11.5" },
+          "strokeType": { "type": "String?", "options": ["acute ICH", "acute ischemic stroke", "none"], "description": "Exclusion - refer to Section 5.3.9" }
+        },
+        "validationRules": [
+          "Exclude pregnant patients - route to Section 11.5",
+          "Exclude acute stroke patients - route to Section 5.3.9",
+          "BP >180 and/or >120 defines hypertensive emergency when target organ damage present",
+          "BP >180/120 without target organ damage = severe hypertension"
+        ]
+      },
+      "logicEngine": {
+        "rules": [
+          "Rule 1: If hypertensive emergency (BP >180 and/or >120 + target organ damage) → ICU admission for continuous monitoring + parenteral therapy",
+          "Rule 2: If hypertensive emergency + compelling condition (acute aortic syndrome/dissection) → Reduce SBP to <140 mm Hg (<120 mm Hg for aortic dissection) within first hour",
+          "Rule 3: If hypertensive emergency + NO compelling condition → Reduce SBP by no more than 25% within first hour (oral/parenteral), then to <160/100 mm Hg in 2-6 hours, then cautiously to 130-140 mm Hg in 24-48 hours",
+          "Rule 4: If severe hypertension (>180/120) + hospitalized for noncardiac condition + NO target organ damage → Do NOT use intermittent IV or oral antihypertensives to acutely reduce BP (Harm)"
+        ],
+        "thresholdsExample": {
+          "categories": [
+            { "name": "Hypertensive Emergency", "sbp": ">180", "dbp": ">120", "organDamage": "present", "action": "ICU + parenteral therapy" },
+            { "name": "Hypertensive Emergency + Aortic Dissection", "sbp": "any", "dbp": "any", "target": "<120 mm Hg in first hour", "action": "Rapid controlled reduction" },
+            { "name": "Hypertensive Emergency + Other Compelling", "sbp": "any", "dbp": "any", "target": "<140 mm Hg in first hour", "action": "Rapid controlled reduction" },
+            { "name": "Hypertensive Emergency - No Compelling", "sbp": ">180", "dbp": ">120", "reduction": "≤25% in 1 hour → <160/100 in 2-6h → 130-140 in 24-48h", "action": "Gradual reduction" },
+            { "name": "Severe HTN - Hospitalized Noncardiac", "sbp": ">180", "dbp": ">120", "organDamage": "absent", "action": "NO acute BP reduction (Harm)" }
+          ]
+        }
+      },
+      "outputModel": {
+        "structName": "HypertensiveEmergencyOutputModel",
+        "fields": {
+          "category": { "type": "String", "description": "e.g., 'Hypertensive Emergency with Aortic Dissection'" },
+          "recommendationLevel": { "type": "String", "description": "e.g., 'COR 1, LOE B-NR'" },
+          "actionRequired": { "type": "String", "description": "e.g., 'ICU admission with parenteral therapy'" },
+          "bpTargets": { "type": "Object", "description": "Time-based BP reduction goals" },
+          "harmPrevention": { "type": "String?", "description": "Warnings for inappropriate treatment" },
+          "exclusionRouting": { "type": "String?", "description": "e.g., 'Route to Section 5.3.9 for stroke or 11.5 for pregnancy'" }
+        },
+        "constraints": ["deterministic", "renderable", "safe", "harm-aware"]
+      },
+      "crisisRules": {
+        "thresholds": {
+          "sbp": ">180",
+          "dbp": ">120"
+        },
+        "symptomsToAsk": [
+          "Evidence of acute target organ damage (neurological deficits, chest pain, shortness of breath, renal impairment, visual changes)"
+        ],
+        "escalationLogic": {
+          "ifAnySymptomPresent": "Admit to ICU, start parenteral therapy, continuous monitoring",
+          "ifNoSymptoms": "Evaluate for severe hypertension without target organ damage - do NOT acutely reduce BP if hospitalized for noncardiac condition (COR 3: Harm)"
+        },
+        "appDisplay": {
+          "screenType": "Emergency alert with organ damage assessment",
+          "button": "ICU admission protocol / Harm prevention warning",
+          "behavior": "Rapid triage to appropriate BP reduction strategy or harm avoidance"
+        }
+      },
+      "nextStepRouting": {
+        "providerSuggestion": "Follow BP reduction protocol based on presence of compelling condition and target organ damage",
+        "followUpTiming": "Monitor at 1 hour, 2-6 hours, 24-48 hours post-intervention",
+        "repeatMeasurement": "Continuous BP monitoring in ICU; frequent checks during gradual reduction",
+        "navigatorEscalation": "Immediate escalation for ICU admission or harm prevention alert for COR 3 recommendations",
+        "documentation": "Log BP readings, target organ damage assessment, compelling conditions, and BP reduction protocol followed"
+      },
+      "tags": {
+        "acute": true,
+        "chronic": false,
+        "screening": false,
+        "diagnosis": true,
+        "management": true,
+        "priority": "critical",
+        "topic": "hypertensive_emergency"
+      }
+    }
+  }
+}

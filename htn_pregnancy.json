@@ -1,0 +1,127 @@
+{
+  "moduleTemplate": {
+    "name": "Hypertension_Pregnancy_ACC_AHA",
+    "sections": {
+      "purpose": {
+        "clinicalProblem": {
+          "clinicalIntent": "Standardized management of hypertension in pregnant individuals to minimize maternal and fetal risk",
+          "whenToUse": "Preconception counseling, pregnancy diagnosis, antepartum care, acute hypertension in pregnancy",
+          "decisionOrAction": "Antihypertensive agent selection + BP targets + aspirin prophylaxis + avoidance of harmful medications"
+        }
+      },
+      "userFlow": {
+        "navigationPath": [
+          { "view": "PregnancyHTNStartView", "purpose": "Entry point for pregnancy hypertension management" },
+          { "view": "PatientStatusView", "purpose": "Determine if planning pregnancy, currently pregnant, or postpartum" },
+          { "view": "BPMeasurementView", "purpose": "Obtain SBP and DBP readings" },
+          { "view": "GestationalAgeView", "purpose": "Determine weeks of gestation (<20 weeks vs ≥20 weeks)" },
+          { "view": "MedicationSelectionView", "purpose": "Select antihypertensive agent based on recommendations" },
+          { "view": "AspirinCounselingView", "purpose": "Provide low-dose aspirin recommendation" },
+          { "view": "BPTargetView", "purpose": "Display BP goals based on clinical scenario" },
+          { "view": "AvoidanceAlertView", "purpose": "Alert against harmful medications" }
+        ]
+      },
+      "inputDataModel": {
+        "structName": "PregnancyHypertensionInputModel",
+        "requiredFields": {
+          "systolic": { "type": "Int?", "validation": "Measure in mmHg" },
+          "diastolic": { "type": "Int?", "validation": "Measure in mmHg" },
+          "gestationalWeeks": { "type": "Int?", "validation": "0-42 weeks" },
+          "pregnancyStatus": { "type": "String?", "validation": "Must be: planning, pregnant, postpartum" }
+        },
+        "optionalFields": {
+          "priorHypertensionDiagnosis": { "type": "Bool?", "description": "Known chronic hypertension" },
+          "previousPreeclampsia": { "type": "Bool?", "description": "History of preeclampsia" },
+          "currentMeds": { "type": "[String]?", "description": "List of current antihypertensives" }
+        },
+        "validationRules": [
+          "SBP range: 70-250 mmHg",
+          "DBP range: 40-150 mmHg",
+          "Gestational weeks: 0-42",
+          "Crisis threshold: SBP ≥160 or DBP ≥110"
+        ]
+      },
+      "logicEngine": {
+        "rules": [
+          "Rule 1: Preconception/pregnant → preferred agents: labetalol or extended-release nifedipine (COR 1, LOE A)",
+          "Rule 2: Preconception/pregnant → counsel on low-dose aspirin 81 mg/day (COR 1, LOE B-R)",
+          "Rule 3: SBP ≥160 OR DBP ≥110 confirmed within 15 min → treat to <160/<110 within 30-60 min (COR 1, LOE B-R)",
+          "Rule 4: Chronic hypertension (pre-pregnancy or SBP 140-159/DBP 90-109 before 20 weeks) → target BP <140/90 (COR 1, LOE B-R)",
+          "Rule 5: NEVER use in pregnancy: atenolol, ACEi, ARB, direct renin inhibitors, nitroprusside, MRA (COR 3: Harm, LOE C-LD)"
+        ],
+        "thresholdsExample": {
+          "categories": [
+            { "name": "Normal BP in Pregnancy", "sbp": "<140", "dbp": "<90", "action": "Routine monitoring" },
+            { "name": "Chronic HTN in Pregnancy", "sbp": "140-159", "dbp": "90-109", "action": "Treat to <140/90", "timing": "Before 20 weeks" },
+            { "name": "Severe HTN in Pregnancy", "sbp": "≥160", "dbp": "≥110", "action": "Urgent treatment", "timing": "Within 30-60 min" },
+            { "name": "Crisis", "sbp": "≥160", "dbp": "≥110", "action": "Repeat within 15 min, then treat" }
+          ],
+          "medicationSafety": [
+            { "agent": "Labetalol", "recommendation": "Preferred", "cor": "1", "loe": "A" },
+            { "agent": "Extended-release Nifedipine", "recommendation": "Preferred", "cor": "1", "loe": "A" },
+            { "agent": "Low-dose Aspirin (81 mg/day)", "recommendation": "Beneficial", "cor": "1", "loe": "B-R" },
+            { "agent": "Atenolol", "recommendation": "Avoid - fetal harm", "cor": "3: Harm", "loe": "C-LD" },
+            { "agent": "ACEi", "recommendation": "Avoid - fetal harm", "cor": "3: Harm", "loe": "C-LD" },
+            { "agent": "ARB", "recommendation": "Avoid - fetal harm", "cor": "3: Harm", "loe": "C-LD" },
+            { "agent": "Direct Renin Inhibitors", "recommendation": "Avoid - fetal harm", "cor": "3: Harm", "loe": "C-LD" },
+            { "agent": "Nitroprusside", "recommendation": "Avoid - fetal harm", "cor": "3: Harm", "loe": "C-LD" },
+            { "agent": "MRA", "recommendation": "Avoid - fetal harm", "cor": "3: Harm", "loe": "C-LD" }
+          ]
+        }
+      },
+      "outputModel": {
+        "structName": "PregnancyHypertensionOutputModel",
+        "fields": {
+          "category": { "type": "String", "description": "e.g., 'Chronic HTN in Pregnancy', 'Severe HTN in Pregnancy'" },
+          "recommendedAgents": { "type": "[String]", "description": "e.g., ['Labetalol', 'Extended-release Nifedipine']" },
+          "bpTarget": { "type": "String", "description": "e.g., '<140/90 mmHg' or '<160/110 mmHg'" },
+          "aspirinRecommended": { "type": "Bool", "description": "True for preconception/pregnant patients" },
+          "avoidMeds": { "type": "[String]", "description": "List of medications to avoid" },
+          "urgentTreatmentRequired": { "type": "Bool", "description": "True if SBP ≥160 or DBP ≥110" },
+          "corAssignment": { "type": "String", "description": "e.g., 'COR 1, LOE A'" }
+        },
+        "constraints": ["deterministic", "renderable", "safe"]
+      },
+      "crisisRules": {
+        "thresholds": {
+          "sbp": "≥160",
+          "dbp": "≥110"
+        },
+        "symptomsToAsk": [
+          "Severe headache",
+          "Visual changes",
+          "Upper abdominal pain (especially right upper quadrant)",
+          "Shortness of breath",
+          "Nausea/vomiting",
+          "Decreased urine output",
+          "Chest pain"
+        ],
+        "escalationLogic": {
+          "ifAnySymptomPresent": "Immediate hospital transfer for possible preeclampsia/eclampsia",
+          "ifNoSymptoms": "Repeat BP within 15 minutes; treat with IV/oral antihypertensive to target <160/110 within 30-60 minutes"
+        },
+        "appDisplay": {
+          "screenType": "Urgent alert screen (orange/yellow for pregnancy-specific crisis)",
+          "button": "Emergency contact + hospital transfer guidance",
+          "behavior": "Do not delay treatment; initiate protocol within 15 minutes"
+        }
+      },
+      "nextStepRouting": {
+        "providerSuggestion": "Obstetrician or maternal-fetal medicine specialist involvement for BP ≥140/90",
+        "followUpTiming": "Weekly BP monitoring if chronic HTN; daily if severe range",
+        "repeatMeasurement": "Confirm severe elevation within 15 minutes before treatment",
+        "navigatorEscalation": "Alert OB triage if SBP ≥160 or DBP ≥110",
+        "documentation": "Log BP readings, medication administration, aspirin counseling, and avoided medications to prenatal record"
+      },
+      "tags": {
+        "acute": true,
+        "chronic": true,
+        "screening": false,
+        "diagnosis": true,
+        "management": true,
+        "priority": "high",
+        "topic": "hypertension_pregnancy"
+      }
+    }
+  }
+}

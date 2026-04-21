@@ -1,0 +1,113 @@
+{
+  "moduleTemplate": {
+    "name": "Potassium_Supplementation_BP_Management",
+    "sections": {
+      "purpose": {
+        "clinicalProblem": {
+          "clinicalIntent": "Guidance on moderate potassium supplementation for BP management in adults with elevated BP or hypertension",
+          "whenToUse": "Adults with elevated BP or hypertension, excluding CKD or potassium-retaining drug use",
+          "decisionOrAction": "Recommend moderate potassium supplementation (<80 mmol/d) with monitoring conditions"
+        }
+      },
+      "userFlow": {
+        "navigationPath": [
+          { "view": "PotassiumStartView", "purpose": "Entry point for potassium supplementation assessment" },
+          { "view": "BPStatusView", "purpose": "Confirm elevated BP or hypertension diagnosis" },
+          { "view": "ContraindicationCheckView", "purpose": "Screen for CKD or potassium-retaining medications" },
+          { "view": "PotassiumSourceView", "purpose": "Select dietary vs supplemental potassium source" },
+          { "view": "DosageCalculationView", "purpose": "Calculate potassium dose (<80 mmol/d target)" },
+          { "view": "MonitoringScheduleView", "purpose": "Set serum potassium monitoring if indicated" },
+          { "view": "RecommendationDisplayView", "purpose": "Show COR 1 | LOE A recommendation" },
+          { "view": "DocumentationView", "purpose": "Log recommendation to health record" }
+        ]
+      },
+      "inputDataModel": {
+        "structName": "PotassiumSupplementationInputModel",
+        "requiredFields": {
+          "hasElevatedBP": { "type": "Bool?", "validation": "true/false" },
+          "hasHypertension": { "type": "Bool?", "validation": "true/false" },
+          "hasCKD": { "type": "Bool?", "validation": "true/false" },
+          "onPotassiumRetainingDrugs": { "type": "Bool?", "validation": "true/false" }
+        },
+        "optionalFields": {
+          "potassiumSource": { "type": "String?", "options": ["dietary", "supplement", "both"] },
+          "currentPotassiumIntake": { "type": "Int?", "validation": "mmol/d" },
+          "serumPotassium": { "type": "Float?", "validation": "3.5-5.0 mEq/L" },
+          "egfr": { "type": "Int?", "validation": "CKD if <60 mL/min/1.73m²" }
+        },
+        "validationRules": [
+          "Either hasElevatedBP OR hasHypertension must be true",
+          "If hasCKD true OR onPotassiumRetainingDrugs true → require monitoring",
+          "Potassium dose must be <80 mmol/d",
+          "Prefer dietary sources over supplements"
+        ]
+      },
+      "logicEngine": {
+        "rules": [
+          "Check if patient has elevated BP or hypertension",
+          "If CKD present OR on potassium-retaining drugs → flag monitoring requirement",
+          "Recommend potassium dose <80 mmol/d (<80 mEq/d)",
+          "Prefer dietary potassium sources over supplements",
+          "If neither CKD nor potassium-retaining drugs → standard recommendation without mandatory monitoring",
+          "Apply COR 1 (STRONG) + LOE A (High-quality evidence from RCTs)"
+        ],
+        "thresholdsExample": {
+          "categories": [
+            { "name": "Moderate Potassium Supplementation", "dose": "<80 mmol/d", "source_preference": "dietary" },
+            { "name": "Monitoring Required", "condition": "CKD OR potassium-retaining drugs", "action": "monitor serum potassium" },
+            { "name": "No Monitoring Required", "condition": "No CKD AND no potassium-retaining drugs", "action": "standard recommendation" }
+          ]
+        }
+      },
+      "outputModel": {
+        "structName": "PotassiumSupplementationOutputModel",
+        "fields": {
+          "category": { "type": "String", "description": "COR 1 | LOE A" },
+          "corStrength": { "type": "String", "values": ["STRONG"] },
+          "suggestedPhrasing": { "type": "String", "description": "Is recommended" },
+          "loe": { "type": "String", "description": "Level A" },
+          "loeDescription": { "type": "String", "description": "High-quality evidence from more than 1 RCT, meta-analyses of high-quality RCTs, or RCTs corroborated by high-quality registry studies" },
+          "recommendation": { "type": "String", "description": "In adults with elevated BP or hypertension, moderate potassium supplementation, ideally from dietary sources, is recommended to prevent or treat elevated BP and hypertension, except in the presence of CKD or use of drugs that reduce potassium excretion where monitoring of serum potassium levels is indicated" },
+          "doseLimit": { "type": "String", "description": "<80 mmol/d (<80 mEq/d)" },
+          "requiresMonitoring": { "type": "Bool", "description": "true if CKD or potassium-retaining drugs present" },
+          "monitoringNote": { "type": "String?", "condition": "if requiresMonitoring == true", "description": "Monitor serum potassium levels" }
+        },
+        "constraints": ["deterministic", "renderable", "safe"]
+      },
+      "crisisRules": {
+        "thresholds": {
+          "sbp": "N/A",
+          "dbp": "N/A"
+        },
+        "symptomsToAsk": [
+          "Signs of hyperkalemia (muscle weakness, fatigue, palpitations) if on supplementation"
+        ],
+        "escalationLogic": {
+          "ifAnySymptomPresent": "Check serum potassium immediately, adjust supplementation",
+          "ifNoSymptoms": "Continue with monitoring per CKD/drug status"
+        },
+        "appDisplay": {
+          "screenType": "Standard recommendation display with COR/LOE badge",
+          "button": "Document recommendation",
+          "behavior": "Normal routing with monitoring alerts if applicable"
+        }
+      },
+      "nextStepRouting": {
+        "providerSuggestion": "Initiate moderate potassium supplementation (<80 mmol/d) from dietary sources",
+        "followUpTiming": "Check serum potassium at baseline and periodically if CKD or on potassium-retaining drugs",
+        "repeatMeasurement": "Monitor BP response to supplementation",
+        "navigatorEscalation": "Alert if potassium dose exceeds 80 mmol/d or if serum potassium abnormal",
+        "documentation": "Log COR 1 | LOE A recommendation to health record with monitoring plan"
+      },
+      "tags": {
+        "acute": false,
+        "chronic": true,
+        "screening": false,
+        "diagnosis": false,
+        "management": true,
+        "priority": "high",
+        "topic": "hypertension_nutrition"
+      }
+    }
+  }
+}

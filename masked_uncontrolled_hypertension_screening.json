@@ -1,0 +1,116 @@
+{
+  "moduleTemplate": {
+    "name": "Masked_Uncontrolled_Hypertension_Screening",
+    "sections": {
+      "purpose": {
+        "clinicalProblem": {
+          "clinicalIntent": "Identify masked uncontrolled hypertension in treated adults with normal office BP",
+          "whenToUse": "Adults on antihypertensive medication with office SBP <130 mm Hg and DBP <80 mm Hg",
+          "decisionOrAction": "Exclude masked uncontrolled hypertension using out-of-office BP monitoring"
+        }
+      },
+      "userFlow": {
+        "navigationPath": [
+          { "view": "MUEligibilityView", "purpose": "Verify patient on antihypertensive meds + office BP <130/80" },
+          { "view": "MUP recommendationView", "purpose": "Display COR 2b/LOE B-NR recommendation" },
+          { "view": "OutOfOfficeBPView", "purpose": "Select monitoring method (ABPM vs HBPM)" },
+          { "view": "MonitoringInstructionsView", "purpose": "Provide device setup and measurement protocol" },
+          { "view": "BPDataCollectionView", "purpose": "Collect out-of-office BP readings" },
+          { "view": "AnalysisView", "purpose": "Compare office vs out-of-office readings" },
+          { "view": "ResultView", "purpose": "Determine if masked uncontrolled hypertension is excluded or confirmed" },
+          { "view": "FollowUpView", "purpose": "Recommend next steps based on results" }
+        ]
+      },
+      "inputDataModel": {
+        "structName": "MaskedUncontrolledInputModel",
+        "requiredFields": {
+          "officeSystolic": { "type": "Int?", "validation": "<130" },
+          "officeDiastolic": { "type": "Int?", "validation": "<80" },
+          "onAntihypertensiveMeds": { "type": "Bool?", "validation": "Must be true" }
+        },
+        "optionalFields": {
+          "outOfOfficeSystolic": { "type": "[Int]?", "validation": "Multiple readings" },
+          "outOfOfficeDiastolic": { "type": "[Int]?", "validation": "Multiple readings" },
+          "monitoringMethod": { "type": "String?", "options": ["ABPM", "HBPM"] }
+        },
+        "validationRules": [
+          "Office SBP <130 mm Hg",
+          "Office DBP <80 mm Hg",
+          "Patient must be on antihypertensive medication",
+          "Out-of-office readings must follow standardized protocol"
+        ]
+      },
+      "logicEngine": {
+        "rules": [
+          "Check eligibility: on meds + office SBP <130 + office DBP <80",
+          "Present recommendation with COR 2b (WEAK) + LOE B-NR (Moderate-quality nonrandomized evidence)",
+          "Offer out-of-office BP monitoring (ABPM or HBPM)",
+          "Compare out-of-office readings to office readings",
+          "If out-of-office BP ≥130/80 → masked uncontrolled hypertension confirmed",
+          "If out-of-office BP <130/80 → masked uncontrolled hypertension excluded",
+          "Decision is 'reasonable to consider' not mandatory due to COR 2b"
+        ],
+        "thresholdsExample": {
+          "categories": [
+            { "name": "Masked Uncontrolled Hypertension", "sbp": "≥130", "dbp": "≥80", "action": "Confirm diagnosis, consider medication adjustment" },
+            { "name": "True Controlled Hypertension", "sbp": "<130", "dbp": "<80", "action": "Exclude masked uncontrolled hypertension, continue current management" }
+          ],
+          "cor": {
+            "class": "2b",
+            "strength": "WEAK",
+            "benefit_risk": "Benefit ≥ Risk",
+            "phrasing": "May/might be reasonable / May/might be considered"
+          },
+          "loe": {
+            "level": "B-NR",
+            "quality": "Moderate-quality",
+            "source": "1 or more nonrandomized studies, observational studies, or registry studies"
+          }
+        }
+      },
+      "outputModel": {
+        "structName": "MaskedUncontrolledOutputModel",
+        "fields": {
+          "category": { "type": "String", "description": "'Masked Uncontrolled Hypertension Confirmed' or 'Masked Uncontrolled Hypertension Excluded'" },
+          "consistency": { "type": "String?", "values": ["office_less_than_out_of_office", "office_equals_out_of_office"] },
+          "recommendedNextStep": { "type": "String", "description": "Based on out-of-office monitoring results" },
+          "crisis": { "type": "Bool", "description": "false - this is not a crisis condition" },
+          "crisisSymptoms": { "type": "[String]?", "condition": "if crisis == true" }
+        },
+        "constraints": ["deterministic", "renderable", "safe"]
+      },
+      "crisisRules": {
+        "thresholds": {
+          "sbp": "N/A - masked hypertension is not a crisis condition",
+          "dbp": "N/A"
+        },
+        "symptomsToAsk": [],
+        "escalationLogic": {
+          "ifAnySymptomPresent": "N/A",
+          "ifNoSymptoms": "N/A"
+        },
+        "appDisplay": {
+          "screenType": "Standard clinical decision support",
+          "button": "Standard navigation",
+          "behavior": "Normal routing with shared decision-making due to weak recommendation"
+        }
+      },
+      "nextStepRouting": {
+        "providerSuggestion": "Consider out-of-office BP monitoring (ABPM or HBPM) to exclude masked uncontrolled hypertension",
+        "followUpTiming": "Repeat assessment annually or with medication changes",
+        "repeatMeasurement": "Confirm with multiple out-of-office readings if initial result equivocal",
+        "navigatorEscalation": "Flag confirmed masked uncontrolled hypertension for medication review",
+        "documentation": "Log COR 2b recommendation, monitoring method used, and final classification"
+      },
+      "tags": {
+        "acute": false,
+        "chronic": true,
+        "screening": true,
+        "diagnosis": true,
+        "management": false,
+        "priority": "medium",
+        "topic": "masked_hypertension"
+      }
+    }
+  }
+}

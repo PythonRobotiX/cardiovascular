@@ -1,0 +1,112 @@
+{
+  "moduleTemplate": {
+    "name": "MCI_Dementia_Prevention_Hypertension",
+    "sections": {
+      "purpose": {
+        "clinicalProblem": {
+          "clinicalIntent": "Prevent mild cognitive impairment and dementia through blood pressure control in hypertensive adults",
+          "whenToUse": "Adults with hypertension, cognitive health screening, dementia prevention counseling",
+          "decisionOrAction": "SBP goal <130 mm Hg recommendation with COR 1 + LOE A classification"
+        }
+      },
+      "userFlow": {
+        "navigationPath": [
+          { "view": "PreventionStartView", "purpose": "Entry point for MCI/dementia prevention module" },
+          { "view": "PatientIdentificationView", "purpose": "Identify adults with hypertension" },
+          { "view": "BPGoalDisplayView", "purpose": "Show SBP goal <130 mm Hg" },
+          { "view": "RecommendationStrengthView", "purpose": "Display COR 1 (STRONG) + LOE A" },
+          { "view": "EvidenceSummaryView", "purpose": "Show high-quality evidence from RCTs" },
+          { "view": "ClinicalPhrasingView", "purpose": "Display 'Is recommended / Should be performed'" },
+          { "view": "ActionPlanView", "purpose": "Create BP management plan" },
+          { "view": "DocumentationView", "purpose": "Log recommendation application" }
+        ]
+      },
+      "inputDataModel": {
+        "structName": "MCI_Prevention_InputModel",
+        "requiredFields": {
+          "hasHypertension": { "type": "Bool?", "validation": "Must be true for this recommendation" },
+          "currentSBP": { "type": "Int?", "validation": "Measured in mm Hg" }
+        },
+        "optionalFields": {
+          "age": { "type": "Int?", "options": "Adult patients only" },
+          "cognitiveBaseline": { "type": "String?", "options": ["normal", "MCI", "unknown"] },
+          "onAntihypertensives": { "type": "Bool?" }
+        },
+        "validationRules": [
+          "Patient must be adult with hypertension",
+          "SBP measurement required for goal tracking"
+        ]
+      },
+      "logicEngine": {
+        "rules": [
+          "COR 1 = STRONG recommendation, Benefit >>> Risk",
+          "LOE A = High-quality evidence from >1 RCT or meta-analyses of high-quality RCTs",
+          "Target SBP <130 mm Hg for cognitive protection",
+          "Recommendation applies to primary and secondary prevention of MCI/dementia",
+          "Should be implemented in all adults with hypertension regardless of age"
+        ],
+        "thresholdsExample": {
+          "categories": [
+            { 
+              "name": "SBP Goal Achieved", 
+              "sbp": "<130", 
+              "action": "Maintain current management, monitor cognition",
+              "operator": "<"
+            },
+            { 
+              "name": "SBP Goal Not Achieved", 
+              "sbp": "≥130", 
+              "action": "Intensify antihypertensive therapy, reassess in 1-3 months",
+              "operator": "≥"
+            }
+          ]
+        }
+      },
+      "outputModel": {
+        "structName": "MCI_Prevention_OutputModel",
+        "fields": {
+          "category": { "type": "String", "description": "'Prevention of Mild Cognitive Impairment and Dementia'" },
+          "cor": { "type": "String", "description": "Class 1 (STRONG)" },
+          "loe": { "type": "String", "description": "Level A" },
+          "recommendation": { "type": "String", "description": "In adults with hypertension, a goal of <130 mm Hg SBP is recommended to prevent mild cognitive impairment and dementia" },
+          "suggestedPhrasing": { "type": "String", "description": "Is recommended / Is indicated / Should be performed" },
+          "sbpGoal": { "type": "Int", "description": "130" },
+          "sbpGoalAchieved": { "type": "Bool" }
+        },
+        "constraints": ["deterministic", "renderable", "safe"]
+      },
+      "crisisRules": {
+        "thresholds": {
+          "sbp": "N/A - prevention, not acute crisis",
+          "dbp": "N/A"
+        },
+        "symptomsToAsk": [],
+        "escalationLogic": {
+          "ifAnySymptomPresent": "N/A",
+          "ifNoSymptoms": "N/A"
+        },
+        "appDisplay": {
+          "screenType": "Standard recommendation display",
+          "button": "N/A",
+          "behavior": "Normal routing to BP management"
+        }
+      },
+      "nextStepRouting": {
+        "providerSuggestion": "Implement SBP goal <130 mm Hg in all adults with hypertension",
+        "followUpTiming": "Monitor BP every 3-6 months, assess cognition annually",
+        "repeatMeasurement": "Confirm SBP <130 mm Hg at each visit",
+        "navigatorEscalation": "Flag patients with SBP ≥130 mm Hg for treatment intensification",
+        "documentation": "Log SBP readings and cognitive screening results to health record"
+      },
+      "tags": {
+        "acute": false,
+        "chronic": true,
+        "screening": false,
+        "diagnosis": false,
+        "management": true,
+        "priority": "high",
+        "topic": "cognitive_health"
+      }
+    }
+  }
+}

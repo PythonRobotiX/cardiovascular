@@ -1,0 +1,109 @@
+{
+  "moduleTemplate": {
+    "name": "WhiteCoat_Exclusion_Recommendation",
+    "sections": {
+      "purpose": {
+        "clinicalProblem": {
+          "clinicalIntent": "Identify and exclude white-coat effect in medicated adults with elevated office BP but without severe hypertension or resistance",
+          "whenToUse": "Adults on antihypertensive medication with office SBP ≥130 or DBP ≥80, but excluding those with resistant hypertension or SBP ≥160 or DBP ≥100",
+          "decisionOrAction": "Recommend out-of-office BP monitoring to exclude white-coat effect"
+        }
+      },
+      "userFlow": {
+        "navigationPath": [
+          { "view": "PatientAssessmentView", "purpose": "Verify inclusion/exclusion criteria" },
+          { "view": "MedicationConfirmationView", "purpose": "Confirm patient is taking antihypertensive medication" },
+          { "view": "OfficeBPInputView", "purpose": "Enter office SBP and DBP readings" },
+          { "view": "ExclusionCheckView", "purpose": "Rule out resistant hypertension and severe BP (SBP ≥160 or DBP ≥100)" },
+          { "view": "RecommendationDisplayView", "purpose": "Show COR 2a, LOE B-NR recommendation" },
+          { "view": "OutOfOfficeBPView", "purpose": "Guide patient on ambulatory or home BP monitoring" },
+          { "view": "WhiteCoatAnalysisView", "purpose": "Compare office vs out-of-office readings" },
+          { "view": "ResultInterpretationView", "purpose": "Determine if white-coat effect is present" }
+        ]
+      },
+      "inputDataModel": {
+        "structName": "WhiteCoatExclusionInputModel",
+        "requiredFields": {
+          "officeSystolic": { "type": "Int?", "validation": "≥130" },
+          "officeDiastolic": { "type": "Int?", "validation": "≥80" },
+          "onAntihypertensives": { "type": "Bool?", "validation": "Must be true" }
+        },
+        "optionalFields": {
+          "hasResistantHypertension": { "type": "Bool?", "options": [true, false] },
+          "officeSystolicSevere": { "type": "Bool?", "condition": "true if SBP ≥160" },
+          "officeDiastolicSevere": { "type": "Bool?", "condition": "true if DBP ≥100" }
+        },
+        "validationRules": [
+          "Inclusion: office SBP ≥130 OR DBP ≥80",
+          "Inclusion: taking antihypertensive medication",
+          "Exclusion: NOT resistant hypertension",
+          "Exclusion: NOT office SBP ≥160",
+          "Exclusion: NOT office DBP ≥100"
+        ]
+      },
+      "logicEngine": {
+        "rules": [
+          "Verify patient meets all inclusion criteria",
+          "Verify patient meets no exclusion criteria",
+          "If criteria met → recommend out-of-office BP monitoring",
+          "Purpose: Exclude white-coat effect (elevated office BP but normal out-of-office BP)",
+          "Use ambulatory BP monitoring (ABPM) or home BP monitoring (HBPM)",
+          "Compare office readings with out-of-office averages",
+          "White-coat effect confirmed if out-of-office BP is normal (<130/80)"
+        ],
+        "thresholdsExample": {
+          "categories": [
+            { "name": "Inclusion", "officeSBP": "≥130", "officeDBP": "≥80", "onMeds": true },
+            { "name": "Exclusion - Resistant HTN", "note": "Requires ≥3 medications or controlled on ≥4" },
+            { "name": "Exclusion - Severe BP", "officeSBP": "≥160", "officeDBP": "≥100" },
+            { "name": "White-Coat Effect", "officeBP": "≥130/80", "outOfOfficeBP": "<130/80" },
+            { "name": "Sustained Hypertension", "officeBP": "≥130/80", "outOfOfficeBP": "≥130/80" }
+          ]
+        }
+      },
+      "outputModel": {
+        "structName": "WhiteCoatExclusionOutputModel",
+        "fields": {
+          "category": { "type": "String", "description": "'White-coat effect' or 'Sustained hypertension'" },
+          "consistency": { "type": "String?", "values": ["consistent", "inconsistent"], "description": "Office vs out-of-office agreement" },
+          "recommendedNextStep": { "type": "String", "description": "Based on COR 2a recommendation" },
+          "crisis": { "type": "Bool", "description": "false for this recommendation" },
+          "crisisSymptoms": { "type": "[String]?", "condition": "if crisis == true", "description": "N/A" }
+        },
+        "constraints": ["deterministic", "renderable", "safe"]
+      },
+      "crisisRules": {
+        "thresholds": {
+          "sbp": "N/A - white-coat exclusion is not a crisis protocol",
+          "dbp": "N/A"
+        },
+        "symptomsToAsk": [],
+        "escalationLogic": {
+          "ifAnySymptomPresent": "N/A",
+          "ifNoSymptoms": "N/A"
+        },
+        "appDisplay": {
+          "screenType": "Standard recommendation display",
+          "button": "N/A",
+          "behavior": "Normal routing - proceed with out-of-office monitoring"
+        }
+      },
+      "nextStepRouting": {
+        "providerSuggestion": "Order ambulatory BP monitoring or provide home BP monitor",
+        "followUpTiming": "Repeat out-of-office monitoring in 2-4 weeks if white-coat effect suspected",
+        "repeatMeasurement": "Confirm with multiple out-of-office readings (3-7 days of HBPM or 24-hour ABPM)",
+        "navigatorEscalation": "Flag if out-of-office BP confirms sustained hypertension requiring medication adjustment",
+        "documentation": "Log COR 2a, LOE B-NR recommendation and monitoring results"
+      },
+      "tags": {
+        "acute": false,
+        "chronic": true,
+        "screening": true,
+        "diagnosis": true,
+        "management": false,
+        "priority": "medium",
+        "topic": "hypertension_white_coat"
+      }
+    }
+  }
+}

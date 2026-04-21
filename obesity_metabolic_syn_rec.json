@@ -1,0 +1,122 @@
+{
+  "moduleTemplate": {
+    "name": "Obesity_Metabolic_Syndrome_Recommendations",
+    "sections": {
+      "purpose": {
+        "clinicalProblem": {
+          "clinicalIntent": "Provide weight management strategies to lower blood pressure in adults with hypertension and comorbid obesity",
+          "whenToUse": "Hypertension management in patients with BMI ≥27 kg/m² (overweight/obesity) or BMI ≥35 kg/m² (severe obesity)",
+          "decisionOrAction": "Recommend incretin mimetics or bariatric surgery as adjunctive therapy for BP lowering"
+        }
+      },
+      "userFlow": {
+        "navigationPath": [
+          { "view": "ObesityHypertensionStartView", "purpose": "Entry point for obesity+HTN assessment" },
+          { "view": "BMIAssessmentView", "purpose": "Calculate and classify patient BMI" },
+          { "view": "WeightManagementOptionsView", "purpose": "Display relevant recommendations based on BMI category" },
+          { "view": "IncretinMimeticsView", "purpose": "Present GLP-1 RA recommendation for BMI ≥27" },
+          { "view": "BariatricSurgeryView", "purpose": "Present bariatric surgery recommendation for BMI ≥35" },
+          { "view": "SharedDecisionMakingView", "purpose": "Discuss risks/benefits with patient" },
+          { "view": "TreatmentPlanView", "purpose": "Document chosen intervention" },
+          { "view": "FollowUpScheduleView", "purpose": "Schedule BP and weight monitoring" }
+        ]
+      },
+      "inputDataModel": {
+        "structName": "ObesityMetabolicInputModel",
+        "requiredFields": {
+          "bmi": { "type": "Double?", "validation": "≥18.5" },
+          "systolicBP": { "type": "Int?", "validation": "70-250" },
+          "diastolicBP": { "type": "Int?", "validation": "40-150" }
+        },
+        "optionalFields": {
+          "onAntihypertensives": { "type": "Bool?" },
+          "previousWeightLossAttempts": { "type": "Int?" },
+          "bariatricSurgeryCandidate": { "type": "Bool?" }
+        },
+        "validationRules": [
+          "BMI must be ≥27 for incretin mimetics consideration",
+          "BMI must be ≥35 for bariatric surgery consideration",
+          "Patient must have documented hypertension"
+        ]
+      },
+      "logicEngine": {
+        "rules": [
+          "Check if patient has hypertension",
+          "Calculate BMI",
+          "If BMI ≥27: present incretin mimetics recommendation (COR 2b, LOE B-R)",
+          "If BMI ≥35: present bariatric surgery recommendation (COR 2b, LOE B-R)",
+          "Note: Both treatments are adjunctive to existing antihypertensive therapy",
+          "Recommendation strength: WEAK (COR 2b) - Benefit ≥ Risk",
+          "Evidence quality: Moderate-quality from RCT(s)"
+        ],
+        "thresholdsExample": {
+          "categories": [
+            { 
+              "name": "Incretin Mimetics (GLP-1 RAs)", 
+              "bmi_threshold": "≥27 kg/m²",
+              "cor": "2b",
+              "loe": "B-R",
+              "strength": "WEAK",
+              "phrasing": "may be effective as an adjunct",
+              "context": "when used for weight management"
+            },
+            { 
+              "name": "Bariatric Surgery", 
+              "bmi_threshold": "≥35.0 kg/m²",
+              "cor": "2b",
+              "loe": "B-R",
+              "strength": "WEAK",
+              "phrasing": "may be effective",
+              "context": "in combination with behavioral interventions and antihypertensive therapies"
+            }
+          ]
+        }
+      },
+      "outputModel": {
+        "structName": "ObesityMetabolicOutputModel",
+        "fields": {
+          "category": { "type": "String", "description": "e.g., 'Incretin Mimetics for Weight Management'" },
+          "cor": { "type": "String", "value": "2b" },
+          "loe": { "type": "String", "value": "B-R" },
+          "recommendationText": { "type": "String", "description": "Full recommendation wording" },
+          "eligible": { "type": "Bool", "description": "Whether patient meets BMI criteria" },
+          "adjunctTo": { "type": "String", "description": "antihypertensive therapy" },
+          "strength": { "type": "String", "value": "WEAK" }
+        },
+        "constraints": ["deterministic", "renderable", "safe"]
+      },
+      "crisisRules": {
+        "thresholds": {
+          "sbp": "N/A - not a crisis module",
+          "dbp": "N/A"
+        },
+        "symptomsToAsk": [],
+        "escalationLogic": {
+          "ifAnySymptomPresent": "N/A",
+          "ifNoSymptoms": "N/A"
+        },
+        "appDisplay": {
+          "screenType": "Standard recommendation display",
+          "button": "N/A",
+          "behavior": "Normal routing"
+        }
+      },
+      "nextStepRouting": {
+        "providerSuggestion": "Consider incretin mimetics or bariatric surgery as adjunctive therapy for patients with hypertension and obesity who have not achieved BP targets with standard antihypertensives",
+        "followUpTiming": "Monitor BP at 1, 3, and 6 months after intervention initiation",
+        "repeatMeasurement": "Reassess BMI every 3-6 months; repeat BP at each visit",
+        "navigatorEscalation": "Flag if BP remains uncontrolled despite maximum therapy",
+        "documentation": "Document BMI, BP, weight management intervention chosen, and follow-up schedule"
+      },
+      "tags": {
+        "acute": false,
+        "chronic": true,
+        "screening": false,
+        "diagnosis": false,
+        "management": true,
+        "priority": "medium",
+        "topic": "obesity_hypertension"
+      }
+    }
+  }
+}

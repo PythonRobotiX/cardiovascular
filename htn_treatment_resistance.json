@@ -1,0 +1,125 @@
+{
+  "moduleTemplate": {
+    "name": "Treatment_Resistance",
+    "sections": {
+      "purpose": {
+        "clinicalProblem": {
+          "clinicalIntent": "Identify and manage treatment-resistant hypertension",
+          "whenToUse": "When BP remains uncontrolled despite multiple antihypertensives or requires 4+ medications",
+          "decisionOrAction": "Confirm resistance, exclude pseudoresistance, escalate pharmacological treatment, or refer to specialist"
+        }
+      },
+      "userFlow": {
+        "navigationPath": [
+          { "view": "ResistanceStartView", "purpose": "Entry point for treatment resistance evaluation" },
+          { "view": "ConfirmationCriteriaView", "purpose": "Check BP thresholds and medication count" },
+          { "view": "PseudoresistanceExclusionView", "purpose": "Step through 6 pseudoresistance exclusions" },
+          { "view": "BPMeasurementReviewView", "purpose": "Ensure accurate office BP measurements" },
+          { "view": "AdherenceAssessmentView", "purpose": "Assess medication nonadherence" },
+          { "view": "AmbulatoryBPView", "purpose": "Review home/work/ambulatory BP readings" },
+          { "view": "LifestyleFactorsView", "purpose": "Identify contributing lifestyle factors" },
+          { "view": "InterferingSubstancesView", "purpose": "Review interfering substances" },
+          { "view": "SecondaryCausesView", "purpose": "Screen for secondary hypertension causes" },
+          { "view": "TreatmentEscalationView", "purpose": "Guide pharmacological treatment steps" },
+          { "view": "SpecialistReferralView", "purpose": "Determine if specialist referral needed" }
+        ]
+      },
+      "inputDataModel": {
+        "structName": "TreatmentResistanceInputModel",
+        "requiredFields": {
+          "officeSystolic": { "type": "Int?", "validation": "≥130 for resistance criteria" },
+          "officeDiastolic": { "type": "Int?", "validation": "≥80 for resistance criteria" },
+          "antihypertensiveCount": { "type": "Int?", "validation": "≥3 or ≥4 depending on BP control" }
+        },
+        "optionalFields": {
+          "currentMeds": { "type": "[String]?", "options": ["ACEi", "ARB", "CCB", "thiazide", "thiazide-like", "loop diuretic", "BB", "spironolactone", "eplerenone", "chlorthalidone", "indapamide", "hydralazine", "minoxidil", "aprocitentan"] },
+          "egfr": { "type": "Int?", "validation": "Used for spironolactone eligibility (≥45)" },
+          "heartRate": { "type": "Int?", "validation": "Elevated vs normal" },
+          "ckdStage": { "type": "Int?", "validation": "Stage 4 or greater impacts diuretic choice" }
+        },
+        "validationRules": [
+          "Resistance confirmed if: office BP ≥130/80 on ≥3 antihypertensives",
+          "Resistance confirmed if: office BP <130/80 but requires ≥4 antihypertensives",
+          "Preferred combination: ACEi or ARB + CCB + thiazide-like diuretics"
+        ]
+      },
+      "logicEngine": {
+        "rules": [
+          "Check if BP ≥130/80 on ≥3 meds → confirmed resistance",
+          "Check if BP <130/80 on ≥4 meds → confirmed resistance",
+          "If confirmed, exclude pseudoresistance through 6-step process",
+          "Step 1: Ensure accurate office BP measurements",
+          "Step 2: Assess medication nonadherence",
+          "Step 3: Obtain home/work/ambulatory BP to exclude white-coat effect",
+          "Step 4: Identify and reverse contributing lifestyle factors",
+          "Step 5: Discontinue or minimize interfering substances",
+          "Step 6: Screen for secondary causes of hypertension",
+          "If pseudoresistance excluded → escalate pharmacological treatment",
+          "Maximize diuretic therapy first",
+          "Replace thiazide with chlorthalidone or indapamide",
+          "Add spironolactone or eplerenone if eGFR ≥45",
+          "Use chlorthalidone or loop diuretics for CKD stage 4+",
+          "Add agents with different MOA based on heart rate",
+          "Add BB/central sympatholytics/nondihydropyridine CCB for elevated HR",
+          "Add dual ERA or potent vasodilators as last-line",
+          "Refer to specialist if secondary cause suspected or BP uncontrolled >6 months"
+        ],
+        "thresholdsExample": {
+          "categories": [
+            { "name": "Resistance Confirmed (High BP)", "sbp": "≥130", "dbp": "≥80", "meds": "≥3" },
+            { "name": "Resistance Confirmed (Controlled BP)", "sbp": "<130", "dbp": "<80", "meds": "≥4" },
+            { "name": "Spironolactone Eligible", "egfr": "≥45", "dose_spironolactone": "25-50 mg qd", "dose_eplerenone": "25-50 mg BID" },
+            { "name": "CKD Stage 4+", "egfr": "<30", "diuretic": "chlorthalidone or loop diuretics" },
+            { "name": "Elevated Heart Rate", "hr": "elevated", "add": "BB, central sympatholytics, or nondihydropyridine CCB" },
+            { "name": "Refractory", "treatment_duration": ">6 months uncontrolled", "action": "Refer to specialist" }
+          ]
+        }
+      },
+      "outputModel": {
+        "structName": "TreatmentResistanceOutputModel",
+        "fields": {
+          "category": { "type": "String", "description": "e.g., 'Confirmed Treatment Resistance' or 'Pseudoresistance'" },
+          "resistanceConfirmed": { "type": "Bool" },
+          "pseudoresistanceExcluded": { "type": "Bool" },
+          "recommendedNextStep": { "type": "String", "description": "e.g., 'Maximize diuretic therapy' or 'Add spironolactone'" },
+          "medicationAdjustments": { "type": "[String]", "description": "List of pharmacological changes" },
+          "referToSpecialist": { "type": "Bool" },
+          "referralReason": { "type": "String?", "condition": "if referToSpecialist == true" }
+        },
+        "constraints": ["deterministic", "renderable", "safe"]
+      },
+      "crisisRules": {
+        "thresholds": {
+          "sbp": "N/A - treatment resistance is chronic management, not acute crisis",
+          "dbp": "N/A"
+        },
+        "symptomsToAsk": [],
+        "escalationLogic": {
+          "ifAnySymptomPresent": "N/A",
+          "ifNoSymptoms": "N/A"
+        },
+        "appDisplay": {
+          "screenType": "Standard clinical decision support",
+          "button": "N/A",
+          "behavior": "Normal routing"
+        }
+      },
+      "nextStepRouting": {
+        "providerSuggestion": "Follow stepwise pharmacological escalation; consider specialist referral if refractory",
+        "followUpTiming": "Reassess in 1-3 months after medication changes; if uncontrolled >6 months, refer",
+        "repeatMeasurement": "Confirm with ambulatory BP monitoring after each major medication change",
+        "navigatorEscalation": "Flag patients on ≥4 antihypertensives or requiring dual ERA/vasodilators for care team review",
+        "documentation": "Log resistance confirmation, pseudoresistance exclusions completed, medication regimen, and referral status"
+      },
+      "tags": {
+        "acute": false,
+        "chronic": true,
+        "screening": true,
+        "diagnosis": true,
+        "management": true,
+        "priority": "high",
+        "topic": "hypertension_resistance"
+      }
+    }
+  }
+}

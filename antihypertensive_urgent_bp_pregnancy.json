@@ -1,0 +1,146 @@
+{
+  "moduleTemplate": {
+    "name": "Antihypertensive_Agents_Urgent_BP_Pregnancy",
+    "sections": {
+      "purpose": {
+        "clinicalProblem": {
+          "clinicalIntent": "Standardized selection and dosing of antihypertensive agents for urgent BP control in pregnant patients",
+          "whenToUse": "Severe hypertension in pregnancy requiring urgent blood pressure reduction (not eclampsia seizure prophylaxis)",
+          "decisionOrAction": "Agent selection + dosing protocol + safety screening"
+        }
+      },
+      "userFlow": {
+        "navigationPath": [
+          { "view": "PregnancyHypertensionStartView", "purpose": "Entry point for urgent BP management" },
+          { "view": "PatientSafetyScreeningView", "purpose": "Screen for contraindications (asthma, heart block, cardiac dysfunction)" },
+          { "view": "AgentSelectionView", "purpose": "Choose from Labetalol, Hydralazine, or Nifedipine" },
+          { "view": "DosingCalculatorView", "purpose": "Calculate weight-based or fixed dosing with cumulative max" },
+          { "view": "AdministrationRouteView", "purpose": "Select IV push, infusion, IM, or oral route" },
+          { "view": "OnsetTimerView", "purpose": "Track expected onset of action (1-20 min depending on agent)" },
+          { "view": "MonitoringView", "purpose": "Monitor for adverse effects (hypotension, tachycardia, headache, fetal HR changes)" },
+          { "view": "RedosingDecisionView", "purpose": "Determine if repeat dose needed based on BP response" }
+        ]
+      },
+      "inputDataModel": {
+        "structName": "AntihypertensivePregnancyInputModel",
+        "requiredFields": {
+          "systolicBP": { "type": "Int?", "validation": "≥160 for severe range" },
+          "diastolicBP": { "type": "Int?", "validation": "≥110 for severe range" },
+          "gestationalAge": { "type": "Int?", "validation": "weeks of pregnancy" }
+        },
+        "optionalFields": {
+          "agentSelected": { "type": "String?", "options": ["labetalol", "hydralazine", "nifedipine"] },
+          "previousDosesGiven": { "type": "Int?", "validation": "cumulative dose tracking" },
+          "contraindications": { "type": "[String]?", "options": ["asthma", "heart block", "cardiac dysfunction", "bradycardia"] },
+          "adverseEffects": { "type": "[String]?", "options": ["hypotension", "headache", "tachycardia", "abnormal_fetal_HR"] }
+        },
+        "validationRules": [
+          "Check contraindications before labetalol: no asthma, no heart block, no cardiac dysfunction, no bradycardia",
+          "Hydralazine cumulative dose ≤20 mg IV/IM",
+          "Nifedipine daily max ≤180 mg",
+          "Labetalol cumulative dose ≤300 mg IV"
+        ]
+      },
+      "logicEngine": {
+        "rules": [
+          "If patient has asthma, heart block, cardiac dysfunction, or bradycardia → avoid labetalol",
+          "If hydralazine dose >20 mg cumulative → monitor closely for maternal hypotension and abnormal fetal heart rate",
+          "If nifedipine administered → monitor for reflex tachycardia and headache",
+          "Agent selection based on contraindications, onset time needed, and route availability",
+          "Track cumulative dosing against maximum thresholds",
+          "Redosing interval based on agent-specific timing (10-30 min for labetalol, 20-40 min for hydralazine, 20 min for nifedipine)"
+        ],
+        "thresholdsExample": {
+          "agents": [
+            {
+              "name": "Labetalol",
+              "initialDose": "10-20 mg IV",
+              "redosing": "20-80 mg every 10-30 min",
+              "maxCumulative": "300 mg",
+              "alternativeRoute": "constant infusion 1-3 mg/min IV",
+              "onsetMinutes": 1.5,
+              "onsetRange": "1-2 minutes",
+              "contraindications": ["asthma", "preexisting myocardial disease", "decompensated cardiac function", "heart block", "bradycardia"],
+              "adverseEffects": ["tachycardia less common", "fewer adverse effects than alternatives"]
+            },
+            {
+              "name": "Hydralazine",
+              "initialDose": "5 mg IV or IM",
+              "redosing": "5-10 mg every 20-40 min",
+              "maxCumulative": "20 mg",
+              "alternativeRoute": "constant infusion 0.5-10 mg/h",
+              "onsetMinutes": 15,
+              "onsetRange": "10-20 minutes",
+              "contraindications": [],
+              "adverseEffects": ["maternal hypotension", "headaches", "abnormal fetal heart rate tracings"]
+            },
+            {
+              "name": "Nifedipine",
+              "initialDose": "10-20 mg orally",
+              "redosing": "repeat in 20 min if needed, then 10-20 mg every 2-6 h",
+              "maxDaily": "180 mg",
+              "route": "immediate release oral",
+              "onsetMinutes": 7.5,
+              "onsetRange": "5-10 minutes",
+              "contraindications": [],
+              "adverseEffects": ["reflex tachycardia", "headaches"]
+            }
+          ]
+        }
+      },
+      "outputModel": {
+        "structName": "AntihypertensivePregnancyOutputModel",
+        "fields": {
+          "category": { "type": "String", "description": "e.g., 'Labetalol - First line for most' or 'Hydralazine - Alternative' or 'Nifedipine - Oral option'" },
+          "recommendedAgent": { "type": "String", "values": ["labetalol", "hydralazine", "nifedipine"] },
+          "calculatedDose": { "type": "String", "description": "e.g., '10 mg IV'" },
+          "administrationInstructions": { "type": "String", "description": "Route, rate, and redosing interval" },
+          "cumulativeDoseTracked": { "type": "Int", "description": "Running total of administered doses" },
+          "maxDoseWarning": { "type": "Bool", "description": "True if approaching maximum" },
+          "onsetExpectedMinutes": { "type": "Int", "description": "Minutes until expected effect" },
+          "adverseEffectMonitoring": { "type": "[String]", "description": "List of effects to monitor" },
+          "contraindicationFlags": { "type": "[String]", "description": "Any active contraindications" }
+        },
+        "constraints": ["deterministic", "renderable", "safe", "dose-aware"]
+      },
+      "crisisRules": {
+        "thresholds": {
+          "sbp": "≥160",
+          "dbp": "≥110"
+        },
+        "symptomsToAsk": [
+          "Severe headache",
+          "Visual changes",
+          "Epigastric pain",
+          "Shortness of breath",
+          "Decreased fetal movement"
+        ],
+        "escalationLogic": {
+          "ifAnySymptomPresent": "Consider magnesium sulfate for seizure prophylaxis, escalate to maternal-fetal medicine",
+          "ifNoSymptoms": "Continue urgent BP control with selected agent, monitor BP q15min"
+        },
+        "appDisplay": {
+          "screenType": "Urgent hypertension management screen",
+          "button": "Administer dose / Contact MFM",
+          "behavior": "Strict dose tracking with maximum alerts"
+        }
+      },
+      "nextStepRouting": {
+        "providerSuggestion": "Notify obstetrics team and maternal-fetal medicine",
+        "followUpTiming": "Monitor BP every 15-30 minutes until controlled",
+        "repeatMeasurement": "Recheck BP at peak onset time for each agent",
+        "navigatorEscalation": "Alert if cumulative dose exceeds maximum or adverse effects occur",
+        "documentation": "Log agent, dose, route, BP response, and adverse effects to maternal health record"
+      },
+      "tags": {
+        "acute": true,
+        "chronic": false,
+        "screening": false,
+        "diagnosis": false,
+        "management": true,
+        "priority": "high",
+        "topic": "pregnancy_hypertension"
+      }
+    }
+  }
+}

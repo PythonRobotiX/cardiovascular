@@ -1,0 +1,148 @@
+{
+  "module_name": "Out-of-Office BP Monitoring",
+  
+  "purpose": {
+    "clinical_intent": "Provide accurate BP assessment outside the clinic using ABPM or HBPM.",
+    "when_to_use": [
+      "suspected hypertension",
+      "confirming office-based hypertension",
+      "evaluating white-coat or masked hypertension",
+      "monitoring treatment response",
+      "assessing BP variability and nocturnal dipping"
+    ],
+    "decision_output": [
+      "mean BP values",
+      "pattern detection",
+      "hypertension confirmation",
+      "routing to next steps"
+    ]
+  },
+
+  "user_flow": [
+    { "view": "OOBPStartView", "purpose": "choose ABPM vs HBPM" },
+    { "view": "OOBPMethodInfoView", "purpose": "explain device type" },
+    { "view": "OOBPSetupView", "purpose": "device placement instructions" },
+    { "view": "OOBPMonitoringPeriodView", "purpose": "show monitoring duration" },
+    { "view": "OOBPDataEntryView", "purpose": "upload readings or sync device" },
+    { "view": "OOBPProcessingView", "purpose": "compute averages + patterns" },
+    { "view": "OOBPResultView", "purpose": "display results" },
+    { "view": "OOBPNextStepsView", "purpose": "routing + follow-up" }
+  ],
+
+  "input_model": {
+    "method": "ABPM | HBPM",
+    "daytime_readings": "array<int> (optional)",
+    "nighttime_readings": "array<int> (optional)",
+    "home_readings": "array<object> (optional)",
+    "measurement_days": "int (optional)",
+    "timestamps": "array<date> (optional)",
+    "device_type": "string (optional)",
+    "validation_rules": {
+      "abpm_min_readings": 20,
+      "hbpm_min_days": 3,
+      "hbpm_min_readings_per_day": 2
+    }
+  },
+
+  "logic_engine": {
+    "abpm": {
+      "compute": [
+        "24hr_mean",
+        "daytime_mean",
+        "nighttime_mean",
+        "dipping_ratio",
+        "morning_surge",
+        "variability"
+      ],
+      "identify": [
+        "non_dipping",
+        "reverse_dipping",
+        "high_variability",
+        "hypotension"
+      ]
+    },
+    "hbpm": {
+      "compute": [
+        "mean_bp",
+        "day_vs_evening",
+        "day_to_day_variability"
+      ],
+      "validate": [
+        "sufficient_days",
+        "sufficient_readings"
+      ]
+    },
+    "classification_thresholds": {
+      "normal": { "sbp": "<130", "dbp": "<80" },
+      "elevated": { "sbp": "130-134", "dbp": "80-84" },
+      "hypertension": { "sbp": ">=135", "dbp": ">=85" }
+    },
+    "crisis_threshold": {
+      "sbp": ">=180",
+      "dbp": ">=120"
+    }
+  },
+
+  "output_model": {
+    "mean24hr": "object",
+    "meanDaytime": "object",
+    "meanNighttime": "object",
+    "dippingStatus": "string",
+    "morningSurge": "string",
+    "variability": "string",
+    "category": "string",
+    "crisis": "bool",
+    "crisisSymptoms": "array<string>",
+    "recommendedNextStep": "string"
+  },
+
+  "crisis_rules": {
+    "thresholds": {
+      "sbp": ">=180",
+      "dbp": ">=120"
+    },
+    "symptoms_to_ask": [
+      "chest pain",
+      "shortness of breath",
+      "neurological symptoms",
+      "severe headache"
+    ],
+    "escalation_logic": {
+      "symptomatic": "recommend ER immediately",
+      "asymptomatic": "repeat measurement + urgent provider contact"
+    },
+    "ui_behavior": {
+      "screen": "red_alert",
+      "emergency_button": true,
+      "block_normal_routing": true
+    }
+  },
+
+  "next_step_routing": {
+    "diagnosis": [
+      "normal",
+      "elevated",
+      "hypertension_confirmed",
+      "masked_hypertension",
+      "white_coat_hypertension"
+    ],
+    "provider_suggestion": "PCP or specialist follow-up",
+    "follow_up_timing": "based on category",
+    "navigator_escalation": "true if crisis or abnormal patterns",
+    "documentation": [
+      "mean BP values",
+      "dipping pattern",
+      "variability metrics"
+    ]
+  },
+
+  "tags": {
+    "acute": false,
+    "chronic": true,
+    "screening": true,
+    "diagnosis": true,
+    "management": true,
+    "priority": "high",
+    "topic": "out_of_office_bp_monitoring"
+  }
+}

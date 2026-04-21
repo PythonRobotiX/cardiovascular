@@ -1,0 +1,142 @@
+{
+  "moduleTemplate": {
+    "name": "BP_Category_Classification_No_Meds",
+    "sections": {
+      "purpose": {
+        "clinicalProblem": {
+          "clinicalIntent": "Classify BP patterns using office and out-of-office measurements to identify hypertension phenotypes",
+          "whenToUse": "Initial hypertension evaluation, medication decision-making, confirming diagnosis after abnormal office readings",
+          "decisionOrAction": "BP phenotype classification (sustained normotension, sustained hypertension, masked hypertension, white-coat hypertension)"
+        }
+      },
+      "userFlow": {
+        "navigationPath": [
+          { "view": "BPClassificationStartView", "purpose": "Entry point for BP phenotype classification" },
+          { "view": "OfficeBPInputView", "purpose": "Enter office/clinic BP readings" },
+          { "view": "OutOfOfficeBPInputView", "purpose": "Enter home or ambulatory BP readings" },
+          { "view": "MedicationStatusView", "purpose": "Confirm patient is not taking antihypertensive medication" },
+          { "view": "ClassificationProcessingView", "purpose": "Apply logic engine to determine BP category" },
+          { "view": "BPResultView", "purpose": "Display BP phenotype classification" },
+          { "view": "RecommendationView", "purpose": "Show next steps based on classification" },
+          { "view": "DocumentationView", "purpose": "Log classification to health record" }
+        ]
+      },
+      "inputDataModel": {
+        "structName": "BP_Category_InputModel",
+        "requiredFields": {
+          "officeBP_high": { "type": "Bool?", "validation": "true/false based on standardized thresholds" },
+          "outOfOfficeBP_high": { "type": "Bool?", "validation": "true/false based on home/ambulatory thresholds" }
+        },
+        "optionalFields": {
+          "officeSystolic": { "type": "Int?", "validation": "70-250" },
+          "officeDiastolic": { "type": "Int?", "validation": "40-150" },
+          "outOfOfficeSystolic": { "type": "Int?", "validation": "60-250" },
+          "outOfOfficeDiastolic": { "type": "Int?", "validation": "40-150" },
+          "measurementMethod": { "type": "String?", "options": ["home_monitoring", "ambulatory_24hr", "workplace"] },
+          "readingsCount": { "type": "Int?", "validation": "minimum 2-3 readings for each setting" }
+        },
+        "validationRules": [
+          "Patient must NOT be taking antihypertensive medication",
+          "Office BP should be based on properly measured readings",
+          "Out-of-office BP should be based on standardized home or ambulatory monitoring",
+          "Both office and out-of-office assessments required for classification"
+        ]
+      },
+      "logicEngine": {
+        "rules": [
+          "Rule 1: IF officeBP_high == false AND outOfOfficeBP_high == false → Sustained normotension",
+          "Rule 2: IF officeBP_high == true AND outOfOfficeBP_high == true → Sustained hypertension",
+          "Rule 3: IF officeBP_high == false AND outOfOfficeBP_high == true → Masked hypertension",
+          "Rule 4: IF officeBP_high == true AND outOfOfficeBP_high == false → White-coat hypertension",
+          "Classification applies only to individuals not taking antihypertensive medication",
+          "High BP thresholds should follow current guideline definitions (e.g., ≥130/80 mmHg for out-of-office)"
+        ],
+        "thresholdsExample": {
+          "categories": [
+            { 
+              "name": "Sustained normotension", 
+              "officeBP_high": false, 
+              "outOfOfficeBP_high": false,
+              "description": "Blood pressure is normal in both clinical and non-clinical settings"
+            },
+            { 
+              "name": "Sustained hypertension", 
+              "officeBP_high": true, 
+              "outOfOfficeBP_high": true,
+              "description": "Blood pressure is elevated in both clinical and non-clinical settings"
+            },
+            { 
+              "name": "Masked hypertension", 
+              "officeBP_high": false, 
+              "outOfOfficeBP_high": true,
+              "description": "Blood pressure is normal in clinic but elevated out of office (increased cardiovascular risk)"
+            },
+            { 
+              "name": "White-coat hypertension", 
+              "officeBP_high": true, 
+              "outOfOfficeBP_high": false,
+              "description": "Blood pressure is elevated in clinic but normal out of office (lower cardiovascular risk than sustained hypertension)"
+            }
+          ]
+        }
+      },
+      "outputModel": {
+        "structName": "BP_Category_OutputModel",
+        "fields": {
+          "category": { "type": "String", "description": "One of: Sustained normotension, Sustained hypertension, Masked hypertension, White-coat hypertension" },
+          "officeBP_status": { "type": "String", "values": ["high", "normal"] },
+          "outOfOfficeBP_status": { "type": "String", "values": ["high", "normal"] },
+          "riskLevel": { "type": "String", "values": ["lowest", "high", "moderate-high", "low-moderate"] },
+          "recommendedNextStep": { "type": "String", "description": "Specific to each category" },
+          "requiresMedication": { "type": "Bool" },
+          "requiresConfirmatoryTesting": { "type": "Bool" }
+        },
+        "constraints": ["deterministic", "renderable", "safe"]
+      },
+      "crisisRules": {
+        "thresholds": {
+          "sbp": "N/A for classification (crisis rules apply separately if BP reaches crisis levels)",
+          "dbp": "N/A"
+        },
+        "symptomsToAsk": [
+          "If BP is severely elevated in either setting, check for hypertensive crisis symptoms"
+        ],
+        "escalationLogic": {
+          "ifAnySymptomPresent": "Treat as hypertensive emergency regardless of classification",
+          "ifNoSymptoms": "Proceed with classification and appropriate follow-up"
+        },
+        "appDisplay": {
+          "screenType": "Standard classification display with risk stratification",
+          "button": "Standard navigation unless crisis detected",
+          "behavior": "Normal routing unless crisis thresholds met"
+        }
+      },
+      "nextStepRouting": {
+        "providerSuggestion": {
+          "Sustained normotension": "Routine follow-up per age/risk factors, repeat screening annually",
+          "Sustained hypertension": "Initiate lifestyle modifications and pharmacotherapy per guidelines",
+          "Masked hypertension": "Confirm with ambulatory monitoring, initiate lifestyle modifications, consider pharmacotherapy if high risk",
+          "White-coat hypertension": "Confirm with repeated out-of-office monitoring, lifestyle modifications, monitor annually for progression to sustained hypertension"
+        },
+        "followUpTiming": {
+          "Sustained normotension": "1 year",
+          "Sustained hypertension": "1-3 months until controlled, then 3-6 months",
+          "Masked hypertension": "3-6 months for confirmation and treatment initiation",
+          "White-coat hypertension": "6-12 months with out-of-office confirmation"
+        },
+        "repeatMeasurement": "Confirm sustained hypertension with repeated out-of-office measurements. White-coat and masked hypertension may require 24-hour ambulatory monitoring for confirmation",
+        "navigatorEscalation": "Flag sustained and masked hypertension for care team review. White-coat hypertension requires monitoring annotation",
+        "documentation": "Log BP category, both office and out-of-office status, and classification date to health record. Flag that patient is not on antihypertensive medication"
+      },
+      "tags": {
+        "acute": false,
+        "chronic": true,
+        "screening": true,
+        "diagnosis": true,
+        "management": false,
+        "priority": "high",
+        "topic": "hypertension_phenotypes"
+      }
+    }
+  }
+}

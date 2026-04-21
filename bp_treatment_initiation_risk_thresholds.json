@@ -1,0 +1,134 @@
+{
+  "moduleTemplate": {
+    "name": "BP_Treatment_Initiation_Risk_Thresholds",
+    "sections": {
+      "purpose": {
+        "clinicalProblem": {
+          "clinicalIntent": "Determine when to initiate antihypertensive medications based on BP level and cardiovascular risk factors",
+          "whenToUse": "Initial HTN diagnosis, elevated BP on repeat measurement, treatment decision point",
+          "decisionOrAction": "Medication initiation decision (YES/NO) with specific BP thresholds based on risk category"
+        }
+      },
+      "userFlow": {
+        "navigationPath": [
+          { "view": "TreatmentDecisionStartView", "purpose": "Entry point for treatment initiation decision" },
+          { "view": "BPAverageDisplayView", "purpose": "Show calculated average BP from previous measurements" },
+          { "view": "BPOnlyThresholdView", "purpose": "Check BP ≥140/90 threshold" },
+          { "view": "ClinicalCVDCheckView", "purpose": "Ask about existing CHD, stroke, or HF" },
+          { "view": "RiskFactorAssessmentView", "purpose": "Check diabetes, CKD, or calculate PREVENT-CVD risk" },
+          { "view": "ThresholdDecisionView", "purpose": "Apply appropriate BP threshold (≥140/90 or ≥130/80)" },
+          { "view": "TreatmentRecommendationView", "purpose": "Display medication initiation recommendation" },
+          { "view": "PreventionTypeView", "purpose": "Specify primary vs secondary prevention" }
+        ]
+      },
+      "inputDataModel": {
+        "structName": "BP_Treatment_InputModel",
+        "requiredFields": {
+          "averageSystolic": { "type": "Int?", "validation": "70-250" },
+          "averageDiastolic": { "type": "Int?", "validation": "40-150" },
+          "hasClinicalCVD": { "type": "Bool?", "description": "CHD, stroke, or heart failure" },
+          "hasDiabetes": { "type": "Bool?" },
+          "hasCKD": { "type": "Bool?" },
+          "preventCvdRisk": { "type": "Float?", "validation": "0-100", "description": "10-year PREVENT-CVD risk percentage" }
+        },
+        "optionalFields": {
+          "chdHistory": { "type": "Bool?", "description": "Coronary heart disease" },
+          "strokeHistory": { "type": "Bool?" },
+          "heartFailureHistory": { "type": "Bool?" },
+          "egfr": { "type": "Float?", "condition": "if CKD" },
+          "uacr": { "type": "Float?", "condition": "if CKD" }
+        },
+        "validationRules": [
+          "Average BP should be calculated from ≥2 readings on ≥2 occasions",
+          "PREVENT-CVD risk calculated using validated calculator",
+          "CKD defined as eGFR <60 or UACR ≥30 for ≥3 months"
+        ]
+      },
+      "logicEngine": {
+        "rules": [
+          "Step 1: Check if average BP ≥140/90 → if YES, initiate medications (primary/secondary prevention not specified)",
+          "Step 2: If BP <140/90, check for existing clinical CVD (CHD, stroke, HF) → if YES, initiate if SBP ≥130 OR DBP ≥80 (secondary prevention)",
+          "Step 3: If no clinical CVD, check for diabetes OR CKD OR PREVENT-CVD risk ≥7.5% → if YES, initiate if SBP ≥130 OR DBP ≥80 (primary prevention)",
+          "Step 4: If none of above met → do not initiate medications at this time, proceed to other management",
+          "Prevention type: Secondary = existing CVD; Primary = no CVD but has risk factors"
+        ],
+        "thresholdsExample": {
+          "decisionTree": [
+            {
+              "step": 1,
+              "condition": "Average BP ≥140/90",
+              "action": "Initiate antihypertensive medications",
+              "preventionType": "Primary or secondary (not specified)",
+              "bpThreshold": "≥140/90"
+            },
+            {
+              "step": 2,
+              "condition": "Existing clinical CVD (CHD, stroke, HF) AND average SBP ≥130 OR DBP ≥80",
+              "action": "Initiate antihypertensive medications",
+              "preventionType": "Secondary prevention",
+              "bpThreshold": "≥130/80"
+            },
+            {
+              "step": 3,
+              "condition": "Diabetes OR CKD OR PREVENT-CVD risk ≥7.5% AND average SBP ≥130 OR DBP ≥80",
+              "action": "Initiate antihypertensive medications",
+              "preventionType": "Primary prevention",
+              "bpThreshold": "≥130/80"
+            },
+            {
+              "step": 4,
+              "condition": "None of above met",
+              "action": "Do not initiate medications; proceed to other management",
+              "preventionType": "N/A",
+              "bpThreshold": "N/A"
+            }
+          ]
+        }
+      },
+      "outputModel": {
+        "structName": "BP_Treatment_OutputModel",
+        "fields": {
+          "initiateTreatment": { "type": "Bool", "description": "true if criteria met" },
+          "bpThresholdUsed": { "type": "String", "values": ["≥140/90", "≥130/80", "N/A"] },
+          "preventionType": { "type": "String", "values": ["Primary prevention", "Secondary prevention", "Not applicable"] },
+          "rationale": { "type": "String", "description": "Explanation of which criteria triggered treatment" },
+          "recommendation": { "type": "String", "description": "Clinical recommendation text" },
+          "nextStepsIfNoTreatment": { "type": "String?", "condition": "if initiateTreatment == false" }
+        },
+        "constraints": ["deterministic", "renderable", "safe"]
+      },
+      "crisisRules": {
+        "thresholds": {
+          "sbp": "N/A - treatment initiation module",
+          "dbp": "N/A"
+        },
+        "symptomsToAsk": [],
+        "escalationLogic": {
+          "ifAnySymptomPresent": "N/A",
+          "ifNoSymptoms": "N/A"
+        },
+        "appDisplay": {
+          "screenType": "Standard clinical decision support",
+          "button": "N/A",
+          "behavior": "Normal routing"
+        }
+      },
+      "nextStepRouting": {
+        "providerSuggestion": "If treatment initiated: Start first-line antihypertensive (thiazide, ACEi, ARB, CCB). If not initiated: Lifestyle modification, repeat BP in 3-6 months, or evaluate for other management",
+        "followUpTiming": "If treatment started: Follow up in 4 weeks for BP and side effects. If not started: Reassess in 3-6 months or sooner if BP trends up",
+        "repeatMeasurement": "Confirm elevated BP with home or ambulatory monitoring before treatment initiation",
+        "navigatorEscalation": "Flag patients with BP ≥160/100 for more urgent follow-up; flag PREVENT-CVD risk ≥20% for aggressive risk factor modification",
+        "documentation": "Log decision pathway with BP values, risk factors, and treatment initiation status"
+      },
+      "tags": {
+        "acute": false,
+        "chronic": true,
+        "screening": false,
+        "diagnosis": false,
+        "management": true,
+        "priority": "high",
+        "topic": "hypertension_treatment_initiation"
+      }
+    }
+  }
+}

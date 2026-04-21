@@ -1,0 +1,139 @@
+{
+  "moduleTemplate": {
+    "name": "Blood_Pressure_Thresholds",
+    "sections": {
+      "purpose": {
+        "clinicalProblem": {
+          "clinicalIntent": "Map office BP readings to equivalent thresholds across different measurement methods (HBPM, ABPM)",
+          "whenToUse": "When converting between office BP, home BP monitoring, and ambulatory BP monitoring readings",
+          "decisionOrAction": "Cross-reference BP thresholds to determine equivalent hypertension classification across measurement modalities"
+        }
+      },
+      "userFlow": {
+        "navigationPath": [
+          { "view": "BPThresholdStartView", "purpose": "Entry point for BP threshold lookup" },
+          { "view": "OfficeBPSelectionView", "purpose": "Select office BP value (120/80, 130/80, 140/90, or 160/100)" },
+          { "view": "ThresholdDisplayView", "purpose": "Show equivalent values for HBPM, daytime/nighttime/24-hour ABPM" },
+          { "view": "MeasurementMethodView", "purpose": "Allow user to select alternative measurement method input" },
+          { "view": "ReverseLookupView", "purpose": "Input non-office reading to find equivalent office BP" },
+          { "view": "ClassificationView", "purpose": "Display hypertension stage based on selected threshold" },
+          { "view": "ComparisonView", "purpose": "Compare multiple office BP thresholds side-by-side" },
+          { "view": "DocumentationView", "purpose": "Log threshold mapping to clinical record" }
+        ]
+      },
+      "inputDataModel": {
+        "structName": "BPThresholdInputModel",
+        "requiredFields": {
+          "officeSystolic": { "type": "Int?", "validation": "Must be one of: 120, 130, 140, 160" },
+          "officeDiastolic": { "type": "Int?", "validation": "Must be one of: 80, 90, 100" }
+        },
+        "optionalFields": {
+          "measurementType": { "type": "String?", "options": ["office", "HBPM", "daytime_ABPM", "nighttime_ABPM", "24hr_ABPM"] },
+          "customSystolic": { "type": "Int?", "validation": "For reverse lookup" },
+          "customDiastolic": { "type": "Int?", "validation": "For reverse lookup" }
+        },
+        "validationRules": [
+          "Office BP must match one of the 4 standard thresholds",
+          "Systolic-diastolic pairs must be valid combinations",
+          "HBPM values must be consistent with office conversion"
+        ]
+      },
+      "logicEngine": {
+        "rules": [
+          "Map office BP 120/80 → HBPM 120/80, daytime ABPM 120/80, nighttime ABPM 100/65, 24hr ABPM 115/75",
+          "Map office BP 130/80 → HBPM 130/80, daytime ABPM 130/80, nighttime ABPM 110/65, 24hr ABPM 125/75",
+          "Map office BP 140/90 → HBPM 135/85, daytime ABPM 135/85, nighttime ABPM 120/70, 24hr ABPM 130/80",
+          "Map office BP 160/100 → HBPM 145/90, daytime ABPM 145/90, nighttime ABPM 140/85, 24hr ABPM 145/90",
+          "Allow reverse mapping from any measurement method back to office equivalent",
+          "Flag inconsistent pairs that don't match known thresholds"
+        ],
+        "thresholdsExample": {
+          "categories": [
+            { 
+              "name": "Normal", 
+              "office_bp": "120/80",
+              "hbpm": "120/80",
+              "daytime_abpm": "120/80",
+              "nighttime_abpm": "100/65",
+              "hr_abpm": "115/75"
+            },
+            { 
+              "name": "Elevated", 
+              "office_bp": "130/80",
+              "hbpm": "130/80",
+              "daytime_abpm": "130/80",
+              "nighttime_abpm": "110/65",
+              "hr_abpm": "125/75"
+            },
+            { 
+              "name": "Stage 1 HTN", 
+              "office_bp": "140/90",
+              "hbpm": "135/85",
+              "daytime_abpm": "135/85",
+              "nighttime_abpm": "120/70",
+              "hr_abpm": "130/80"
+            },
+            { 
+              "name": "Stage 2 HTN", 
+              "office_bp": "160/100",
+              "hbpm": "145/90",
+              "daytime_abpm": "145/90",
+              "nighttime_abpm": "140/85",
+              "hr_abpm": "145/90"
+            }
+          ]
+        }
+      },
+      "outputModel": {
+        "structName": "BPThresholdOutputModel",
+        "fields": {
+          "category": { "type": "String", "description": "e.g., 'Stage 1 Hypertension'" },
+          "officeBP": { "type": "String", "description": "e.g., '140/90'" },
+          "equivalentHBPM": { "type": "String", "description": "e.g., '135/85'" },
+          "equivalentDaytimeABPM": { "type": "String", "description": "e.g., '135/85'" },
+          "equivalentNighttimeABPM": { "type": "String", "description": "e.g., '120/70'" },
+          "equivalent24hrABPM": { "type": "String", "description": "e.g., '130/80'" },
+          "measurementConfidence": { "type": "String", "values": ["direct_match", "converted", "interpolated"] }
+        },
+        "constraints": ["deterministic", "renderable", "safe"]
+      },
+      "crisisRules": {
+        "thresholds": {
+          "sbp": "≥180",
+          "dbp": "≥120"
+        },
+        "symptomsToAsk": [
+          "Chest pain",
+          "Shortness of breath",
+          "Neurological symptoms",
+          "Severe headache"
+        ],
+        "escalationLogic": {
+          "ifAnySymptomPresent": "recommend ER immediately",
+          "ifNoSymptoms": "recommend repeat measurement + contact provider"
+        },
+        "appDisplay": {
+          "screenType": "Red alert screen for crisis-level BP regardless of measurement method",
+          "button": "Prominent 'Call 911' button",
+          "behavior": "Do not proceed to normal routing"
+        }
+      },
+      "nextStepRouting": {
+        "providerSuggestion": "Use equivalent thresholds to guide treatment decisions based on available measurement method",
+        "followUpTiming": "Repeat measurement in 2-4 weeks or based on category",
+        "repeatMeasurement": "Confirm with HBPM or ABPM if office reading is borderline",
+        "navigatorEscalation": "Flag discordance between office and out-of-office readings",
+        "documentation": "Log measurement method and equivalent threshold to health record"
+      },
+      "tags": {
+        "acute": false,
+        "chronic": true,
+        "screening": true,
+        "diagnosis": true,
+        "management": true,
+        "priority": "high",
+        "topic": "hypertension_thresholds"
+      }
+    }
+  }
+}

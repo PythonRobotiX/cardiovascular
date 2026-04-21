@@ -1,0 +1,205 @@
+{
+  "moduleTemplate": {
+    "name": "FDA_Approved_Hypertension_Drugs",
+    "sections": {
+      "purpose": {
+        "clinicalProblem": {
+          "clinicalIntent": "Provide FDA-approved pharmacological options for hypertension treatment with dosing and safety information",
+          "whenToUse": "Medication selection, prescribing decision support, patient education on drug therapy",
+          "decisionOrAction": "Drug class selection → specific drug choice → dosing regimen → safety screening"
+        }
+      },
+      "userFlow": {
+        "navigationPath": [
+          { "view": "DrugClassSelectView", "purpose": "Select antihypertensive drug class (Thiazide, ACEi, ARB, CCB)" },
+          { "view": "DrugListView", "purpose": "Display available drugs within selected class" },
+          { "view": "DrugDetailView", "purpose": "Show dosing, frequency, and safety information" },
+          { "view": "ContraindicationCheckView", "purpose": "Screen for pregnancy, angioedema history, renal artery stenosis" },
+          { "view": "LabMonitoringView", "purpose": "Display required labs (electrolytes, renal function, glucose)" },
+          { "view": "DosingCalculatorView", "purpose": "Calculate starting and target doses based on renal function" },
+          { "view": "CombinationCheckView", "purpose": "Warn against ACEi+ARB+direct renin inhibitor combinations" },
+          { "view": "PrescriptionView", "purpose": "Generate prescription with monitoring schedule" }
+        ]
+      },
+      "inputDataModel": {
+        "structName": "HypertensionDrugInputModel",
+        "requiredFields": {
+          "drugClass": { "type": "String?", "validation": "Must be: Thiazide diuretics, ACEi, ARB, CCB-dihydropyridines" },
+          "drugName": { "type": "String?", "validation": "Must match FDA-approved drug list" },
+          "egfr": { "type": "Int?", "validation": "For CKD dosing adjustment" },
+          "potassium": { "type": "Double?", "validation": "For hyperkalemia risk assessment" }
+        },
+        "optionalFields": {
+          "pregnancyStatus": { "type": "Bool?", "options": ["pregnant", "not pregnant", "unknown"] },
+          "angioedemaHistory": { "type": "Bool?", "options": [true, false] },
+          "renalArteryStenosis": { "type": "Bool?", "options": [true, false] },
+          "goutHistory": { "type": "Bool?", "options": [true, false] },
+          "onUricAcidTherapy": { "type": "Bool?", "options": [true, false] },
+          "potassiumSparingUse": { "type": "Bool?", "options": [true, false] }
+        },
+        "validationRules": [
+          "ACEi/ARB: contraindicated in pregnancy",
+          "ACEi: do not combine with ARB or direct renin inhibitor",
+          "ACEi/ARB: caution if K+ >5.0 or on K+ supplements",
+          "ACEi/ARB: avoid if bilateral renal artery stenosis suspected",
+          "Thiazide: monitor uric acid in gout patients not on therapy"
+        ]
+      },
+      "logicEngine": {
+        "rules": [
+          "First-line: Thiazide diuretics, ACEi, ARB, or CCB",
+          "ACEi/ARB: avoid concurrent use (increased adverse events)",
+          "Thiazide: chlorthalidone preferred over HCTZ (longer half-life, more potent)",
+          "CCB: edema more common in women, dose-related",
+          "ACEi: can transition to ARB after 6-week washout if angioedema",
+          "Monitor electrolytes, renal function, glucose based on drug class"
+        ],
+        "thresholdsExample": {
+          "drugClasses": [
+            {
+              "class": "Thiazide-type diuretics",
+              "drugs": [
+                {
+                  "name": "Chlorthalidone",
+                  "doseRange_mg": "12.5-25",
+                  "frequency": 1,
+                  "halfLife": "Long",
+                  "potency": "More potent than HCTZ",
+                  "monitoring": ["hyponatremia", "hypokalemia", "glucose", "uric acid", "calcium"],
+                  "cautions": ["Gout (unless on uric acid therapy)"]
+                },
+                {
+                  "name": "Hydrochlorothiazide",
+                  "doseRange_mg": "25-50",
+                  "frequency": 1,
+                  "halfLife": "Shorter",
+                  "potency": "Less potent than chlorthalidone",
+                  "monitoring": ["hyponatremia", "hypokalemia", "glucose", "uric acid", "calcium"],
+                  "cautions": ["Gout (unless on uric acid therapy)"]
+                },
+                {
+                  "name": "Indapamide",
+                  "doseRange_mg": "1.25-2.5",
+                  "frequency": 1,
+                  "monitoring": ["hyponatremia", "hypokalemia", "glucose", "uric acid", "calcium"],
+                  "cautions": ["Gout (unless on uric acid therapy)"]
+                }
+              ]
+            },
+            {
+              "class": "ACEi",
+              "drugs": [
+                { "name": "Benazepril", "doseRange_mg": "10-40", "frequency": "1 or 2" },
+                { "name": "Captopril", "doseRange_mg": "12.5-150", "frequency": "2 or 3" },
+                { "name": "Enalapril", "doseRange_mg": "5-40", "frequency": "1 or 2" },
+                { "name": "Fosinopril", "doseRange_mg": "10-40", "frequency": 1 },
+                { "name": "Lisinopril", "doseRange_mg": "10-40", "frequency": 1 },
+                { "name": "Moexipril", "doseRange_mg": "7.5-30", "frequency": "1 or 2" },
+                { "name": "Perindopril", "doseRange_mg": "4-16", "frequency": 1 },
+                { "name": "Quinapril", "doseRange_mg": "10-80", "frequency": "1 or 2" },
+                { "name": "Ramipril", "doseRange_mg": "2.5-20", "frequency": "1 or 2" },
+                { "name": "Trandolapril", "doseRange_mg": "1-4", "frequency": 1 }
+              ],
+              "commonComments": {
+                "contraindications": ["Pregnancy", "History of angioedema with ACEi"],
+                "warnings": [
+                  "Do not combine with ARB or direct renin inhibitor",
+                  "Increased hyperkalemia risk with CKD, K+ supplements, K+-sparing drugs",
+                  "Acute renal failure risk with severe bilateral renal artery stenosis"
+                ]
+              }
+            },
+            {
+              "class": "ARBs",
+              "drugs": [
+                { "name": "Azilsartan", "doseRange_mg": "40-80", "frequency": 1 },
+                { "name": "Candesartan", "doseRange_mg": "8-32", "frequency": 1 },
+                { "name": "Eprosartan", "doseRange_mg": "600-800", "frequency": "1 or 2" },
+                { "name": "Irbesartan", "doseRange_mg": "150-300", "frequency": 1 },
+                { "name": "Losartan", "doseRange_mg": "50-100", "frequency": "1 or 2" },
+                { "name": "Olmesartan", "doseRange_mg": "20-40", "frequency": 1 },
+                { "name": "Telmisartan", "doseRange_mg": "20-80", "frequency": 1 },
+                { "name": "Valsartan", "doseRange_mg": "80-320", "frequency": 1 }
+              ],
+              "commonComments": {
+                "contraindications": ["Pregnancy", "History of angioedema with ARBs"],
+                "specialNote": "Patients with ACEi angioedema can receive ARB 6 weeks after ACEi d/c",
+                "warnings": [
+                  "Do not combine with ACEi or direct renin inhibitor",
+                  "Increased hyperkalemia risk with CKD, K+ supplements, K+-sparing drugs",
+                  "Acute renal failure risk with severe bilateral renal artery stenosis"
+                ]
+              }
+            },
+            {
+              "class": "CCB—dihydropyridines",
+              "drugs": [
+                { "name": "Amlodipine", "doseRange_mg": "2.5-10", "frequency": 1 },
+                { "name": "Felodipine", "doseRange_mg": "2.5-10", "frequency": 1 },
+                { "name": "Isradipine", "doseRange_mg": "5-10", "frequency": 2 },
+                { "name": "Nicardipine SR", "doseRange_mg": "60-120", "frequency": 2 },
+                { "name": "Nifedipine LA", "doseRange_mg": "30-90", "frequency": 1 },
+                { "name": "Nisoldipine", "doseRange_mg": "17-34", "frequency": 1 }
+              ],
+              "commonComments": {
+                "sideEffects": ["Dose-related lower extremity edema"],
+                "demographicNote": "Edema more common in women than men"
+              }
+            }
+          ]
+        }
+      },
+      "outputModel": {
+        "structName": "HypertensionDrugOutputModel",
+        "fields": {
+          "category": { "type": "String", "description": "e.g., 'ACE inhibitor - Lisinopril'" },
+          "recommendedDrug": { "type": "String", "description": "Specific drug name" },
+          "startingDose_mg": { "type": "String", "description": "e.g., '10 mg once daily'" },
+          "maxDose_mg": { "type": "String", "description": "e.g., '40 mg once daily'" },
+          "frequency": { "type": "String", "description": "e.g., '1 time/day'" },
+          "contraindications": { "type": "[String]", "description": "List of absolute contraindications" },
+          "monitoringRequired": { "type": "[String]", "description": "Labs and assessments needed" },
+          "patientEducation": { "type": "String", "description": "Key counseling points" }
+        },
+        "constraints": ["deterministic", "renderable", "safe"]
+      },
+      "crisisRules": {
+        "thresholds": {
+          "sbp": "≥180",
+          "dbp": "≥120"
+        },
+        "symptomsToAsk": [
+          "Chest pain",
+          "Shortness of breath",
+          "Neurological symptoms",
+          "Severe headache"
+        ],
+        "escalationLogic": {
+          "ifAnySymptomPresent": "ER immediately - do not start oral therapy",
+          "ifNoSymptoms": "Consider starting oral agent with close follow-up"
+        },
+        "appDisplay": {
+          "screenType": "Red alert if crisis + symptoms",
+          "button": "Call 911 if symptomatic crisis",
+          "behavior": "Defer oral medication until crisis resolved"
+        }
+      },
+      "nextStepRouting": {
+        "providerSuggestion": "Start at lowest dose, titrate every 2-4 weeks",
+        "followUpTiming": "Recheck BP in 2-4 weeks, monitor labs in 4-6 weeks",
+        "repeatMeasurement": "Confirm BP response at each visit",
+        "navigatorEscalation": "Alert if K+ >5.5 or Cr increase >30%",
+        "documentation": "Log drug, dose, frequency, and monitoring schedule"
+      },
+      "tags": {
+        "acute": false,
+        "chronic": true,
+        "screening": false,
+        "diagnosis": false,
+        "management": true,
+        "priority": "high",
+        "topic": "hypertension_pharmacology"
+      }
+    }
+  }
+}

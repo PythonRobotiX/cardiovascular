@@ -1,0 +1,116 @@
+{
+  "moduleTemplate": {
+    "name": "Hypertension_PlanOfCare",
+    "sections": {
+      "purpose": {
+        "clinicalProblem": {
+          "clinicalIntent": "Provide evidence-based recommendations for hypertension management including team-based care, follow-up protocols, HIT interventions, and diagnostic testing",
+          "whenToUse": "Initial hypertension diagnosis, uncontrolled BP management, medication titration, follow-up evaluation",
+          "decisionOrAction": "Care team assignment + follow-up interval + HIT strategy + lab/ECG ordering"
+        }
+      },
+      "userFlow": {
+        "navigationPath": [
+          { "view": "HTNPlanStartView", "purpose": "Entry point for plan of care recommendations" },
+          { "view": "TeamBasedCareView", "purpose": "Display team-based care recommendations" },
+          { "view": "FrameworkView", "purpose": "Show integrated treatment model framework" },
+          { "view": "FollowUpScheduleView", "purpose": "Determine follow-up interval based on BP control status" },
+          { "view": "HITSelectionView", "purpose": "Select HIT interventions (telehealth, EHR, patient registries)" },
+          { "view": "LabOrderView", "purpose": "Generate required laboratory test orders" },
+          { "view": "ECGView", "purpose": "Order 12-lead ECG" },
+          { "view": "TeamRolesView", "purpose": "Display team member roles and responsibilities" },
+          { "view": "CarePlanSummaryView", "purpose": "Output complete care plan" }
+        ]
+      },
+      "inputDataModel": {
+        "structName": "HTNPlanOfCareInputModel",
+        "requiredFields": {
+          "bpControlStatus": { "type": "String?", "validation": "controlled / uncontrolled" },
+          "hypertensionDiagnosis": { "type": "Bool?", "validation": "true / false" }
+        },
+        "optionalFields": {
+          "onAntihypertensiveMeds": { "type": "Bool?", "options": ["true", "false"] },
+          "sdohBarriers": { "type": "[String]?", "options": ["financial", "cultural", "psychosocial", "access"] },
+          "cardiacDisease": { "type": "Bool?" },
+          "resistantHTN": { "type": "Bool?" },
+          "secondaryCause": { "type": "Bool?" }
+        },
+        "validationRules": [
+          "If uncontrolled hypertension → team-based care required",
+          "If new or intensified therapy → monthly follow-up",
+          "If hypertension diagnosed → labs + ECG required"
+        ]
+      },
+      "logicEngine": {
+        "rules": [
+          "If uncontrolled hypertension → recommend team-based care (COR 1, LOE A)",
+          "If uncontrolled hypertension + SDOH barriers → add HBPM + responsive team-based care (COR 1, LOE C-LD)",
+          "Apply integrated treatment model: accurate BP measurement + prompt treatment + patient engagement + ongoing HBPM review (COR 1, LOE B-NR)",
+          "If new or intensified therapy → schedule monthly follow-up for medication adherence and response (COR 1, LOE B-R)",
+          "If uncontrolled hypertension → incorporate HIT (synchronous/asynchronous) for BP control, access, and medication titration (COR 1, LOE B-R)",
+          "If undiagnosed or uncontrolled hypertension → use EHR + patient registries for screening and identification (COR 1, LOE B-NR)",
+          "If uncontrolled hypertension → telehealth interventions can reduce BP (COR 2a, LOE B-R)",
+          "If hypertension diagnosed → order labs (CBC, electrolytes, creatinine, lipid panel, glucose/HbA1c, TSH, urinalysis, UACR) + 12-lead ECG (COR 1, LOE C-EO)"
+        ],
+        "thresholdsExample": {
+          "categories": [
+            { "name": "Team-Based Care", "cor": "1", "loe": "A", "condition": "uncontrolled hypertension" },
+            { "name": "Team-Based Care + SDOH", "cor": "1", "loe": "C-LD", "condition": "uncontrolled hypertension + adverse SDOH" },
+            { "name": "Integrated Treatment Model", "cor": "1", "loe": "B-NR", "condition": "uncontrolled hypertension" },
+            { "name": "Monthly Follow-Up", "cor": "1", "loe": "B-R", "condition": "new or intensified therapy" },
+            { "name": "HIT (synchronous/asynchronous)", "cor": "1", "loe": "B-R", "condition": "uncontrolled hypertension" },
+            { "name": "EHR + Patient Registries", "cor": "1", "loe": "B-NR", "condition": "undiagnosed or uncontrolled hypertension" },
+            { "name": "Telehealth", "cor": "2a", "loe": "B-R", "condition": "uncontrolled hypertension" },
+            { "name": "Labs + ECG", "cor": "1", "loe": "C-EO", "condition": "diagnosed with hypertension" }
+          ]
+        }
+      },
+      "outputModel": {
+        "structName": "HTNPlanOfCareOutputModel",
+        "fields": {
+          "category": { "type": "String", "description": "e.g., 'Team-Based Care (COR 1, LOE A)'" },
+          "recommendations": { "type": "[String]", "description": "List of applicable recommendations" },
+          "careTeamMembers": { "type": "[String]", "description": "Assigned team members based on complexity" },
+          "followUpInterval": { "type": "String", "values": ["monthly", "quarterly", "as needed"] },
+          "hitInterventions": { "type": "[String]", "options": ["telehealth", "EHR", "patient registries", "synchronous communication", "asynchronous communication"] },
+          "requiredLabs": { "type": "[String]", "description": "CBC, electrolytes, creatinine, lipid panel, glucose/HbA1c, TSH, urinalysis, UACR" },
+          "requiredECG": { "type": "Bool", "description": "12-lead ECG required" },
+          "sdohAddressingPlan": { "type": "String?", "condition": "if sdohBarriers present" }
+        },
+        "constraints": ["deterministic", "renderable", "safe"]
+      },
+      "crisisRules": {
+        "thresholds": {
+          "sbp": "N/A - plan of care module",
+          "dbp": "N/A"
+        },
+        "symptomsToAsk": [],
+        "escalationLogic": {
+          "ifAnySymptomPresent": "N/A",
+          "ifNoSymptoms": "N/A"
+        },
+        "appDisplay": {
+          "screenType": "Care plan display",
+          "button": "Generate care plan",
+          "behavior": "Normal routing to care team assignment"
+        }
+      },
+      "nextStepRouting": {
+        "providerSuggestion": "Implement team-based care with assigned roles based on patient complexity",
+        "followUpTiming": "Monthly until BP controlled, then reassess",
+        "repeatMeasurement": "HBPM with structured follow-up and review",
+        "navigatorEscalation": "Flag resistant HTN or secondary causes for specialist referral (nephrology, endocrinology)",
+        "documentation": "Log care plan to EHR, assign team members in patient registry"
+      },
+      "tags": {
+        "acute": false,
+        "chronic": true,
+        "screening": false,
+        "diagnosis": false,
+        "management": true,
+        "priority": "high",
+        "topic": "hypertension_plan_of_care"
+      }
+    }
+  }
+}

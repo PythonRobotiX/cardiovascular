@@ -1,0 +1,110 @@
+{
+  "moduleTemplate": {
+    "name": "Potassium_Based_Salt_Substitutes",
+    "sections": {
+      "purpose": {
+        "clinicalProblem": {
+          "clinicalIntent": "Provide evidence-based recommendation for potassium-based salt substitutes to prevent or treat elevated BP and hypertension",
+          "whenToUse": "Adults with or without hypertension who use salt in food preparation or flavoring at home",
+          "decisionOrAction": "Recommend potassium-based salt substitutes (25-30% KCl) with monitoring exceptions"
+        }
+      },
+      "userFlow": {
+        "navigationPath": [
+          { "view": "SaltSubstituteStartView", "purpose": "Entry point for salt substitute recommendation" },
+          { "view": "PatientAssessmentView", "purpose": "Screen for CKD and potassium-reducing medications" },
+          { "view": "ProductIdentificationView", "purpose": "Verify salt substitute contains 25-30% KCl" },
+          { "view": "EligibilityCheckView", "purpose": "Check for contraindications (CKD, potassium-reducing drugs)" },
+          { "view": "MonitoringRequiredView", "purpose": "Display monitoring requirements if indicated" },
+          { "view": "RecommendationDisplayView", "purpose": "Show COR 2a | LOE A recommendation" },
+          { "view": "MedicationReviewView", "purpose": "List potassium-reducing drugs for provider review" },
+          { "view": "DocumentationView", "purpose": "Log recommendation and monitoring plan" }
+        ]
+      },
+      "inputDataModel": {
+        "structName": "SaltSubstituteInputModel",
+        "requiredFields": {
+          "hasCKD": { "type": "Bool?", "validation": "true/false" },
+          "onPotassiumReducingMeds": { "type": "Bool?", "validation": "true/false" },
+          "saltIntakeSource": { "type": "String?", "validation": "home_preparation vs processed_foods vs both" }
+        },
+        "optionalFields": {
+          "productType": { "type": "String?", "options": ["potassium_based", "other_substitute", "unknown"] },
+          "potassiumChloridePercentage": { "type": "Int?", "validation": "0-100" },
+          "serumPotassium": { "type": "Double?", "validation": "3.5-5.0 mEq/L normal range" },
+          "egfr": { "type": "Double?", "validation": "CKD if <60 for 3+ months" }
+        },
+        "validationRules": [
+          "Product must contain 25-30% KCl to be recommended",
+          "Products without KCl have unknown effects",
+          "CKD or potassium-reducing drugs require monitoring",
+          "Serum potassium monitoring indicated for at-risk patients"
+        ]
+      },
+      "logicEngine": {
+        "rules": [
+          "Determine if patient has CKD or takes potassium-reducing drugs",
+          "If yes → require serum potassium monitoring",
+          "If no → standard recommendation applies",
+          "Verify salt substitute contains 25-30% potassium chloride",
+          "If product lacks KCl → effect is unknown (not recommended)",
+          "Classify based on patient profile and product composition"
+        ],
+        "thresholdsExample": {
+          "categories": [
+            { "name": "Recommended with Monitoring", "cor_loe": "2a | A", "condition": "CKD or potassium-reducing drugs present", "action": "Use with serum potassium monitoring" },
+            { "name": "Recommended", "cor_loe": "2a | A", "condition": "No CKD, no potassium-reducing drugs, home salt preparation", "action": "Can be useful to prevent/treat elevated BP" },
+            { "name": "Not Recommended", "cor_loe": "N/A", "condition": "Product lacks potassium chloride", "action": "Unknown effect on BP" },
+            { "name": "Unknown", "cor_loe": "N/A", "condition": "Cannot verify product composition", "action": "Refer to product label for KCl content" }
+          ]
+        }
+      },
+      "outputModel": {
+        "structName": "SaltSubstituteOutputModel",
+        "fields": {
+          "category": { "type": "String", "description": "e.g., 'COR 2a | LOE A - Moderate Strength Recommendation'" },
+          "recommendation": { "type": "String", "description": "Full recommendation text" },
+          "requiresMonitoring": { "type": "Bool", "description": "True if CKD or potassium-reducing drugs present" },
+          "monitoringType": { "type": "String?", "values": ["serum_potassium", "renal_function"], "condition": "if requiresMonitoring == true" },
+          "contraindications": { "type": "[String]", "description": "List of relevant contraindications" },
+          "productRequirements": { "type": "String", "description": "Must contain 25-30% KCl" }
+        },
+        "constraints": ["deterministic", "renderable", "safe"]
+      },
+      "crisisRules": {
+        "thresholds": {
+          "sbp": "N/A - lifestyle intervention",
+          "dbp": "N/A"
+        },
+        "symptomsToAsk": [
+          "Signs of hyperkalemia (muscle weakness, fatigue, palpitations, paresthesias) if on potassium-reducing drugs"
+        ],
+        "escalationLogic": {
+          "ifAnySymptomPresent": "Check serum potassium immediately, consider discontinuing salt substitute",
+          "ifNoSymptoms": "Continue with monitoring as indicated"
+        },
+        "appDisplay": {
+          "screenType": "Standard recommendation with monitoring alert",
+          "button": "Schedule potassium monitoring if indicated",
+          "behavior": "Proceed with caution for at-risk patients"
+        }
+      },
+      "nextStepRouting": {
+        "providerSuggestion": "For CKD or patients on potassium-reducing drugs: order baseline and periodic serum potassium levels",
+        "followUpTiming": "Check serum potassium within 2-4 weeks of starting salt substitute, then every 3-6 months",
+        "repeatMeasurement": "Monitor BP response to salt substitute after 4-8 weeks",
+        "navigatorEscalation": "Flag if serum potassium >5.0 mEq/L or patient develops hyperkalemia symptoms",
+        "documentation": "Log salt substitute recommendation, product verification, and monitoring schedule"
+      },
+      "tags": {
+        "acute": false,
+        "chronic": true,
+        "screening": false,
+        "diagnosis": false,
+        "management": true,
+        "priority": "medium",
+        "topic": "hypertension_lifestyle"
+      }
+    }
+  }
+}

@@ -1,0 +1,110 @@
+{
+  "moduleTemplate": {
+    "name": "Secondary_Hypertension_Screening",
+    "sections": {
+      "purpose": {
+        "clinicalProblem": {
+          "clinicalIntent": "Screen for secondary hypertension when clinical suspicion exists to enable targeted therapy",
+          "whenToUse": "Adults with hypertension + clinical clues suggesting secondary cause (young age, resistant hypertension, abrupt onset, etc.)",
+          "decisionOrAction": "Detection, diagnosis, and specific targeted therapy for secondary hypertension"
+        }
+      },
+      "userFlow": {
+        "navigationPath": [
+          { "view": "HTNScreeningStartView", "purpose": "Entry point for secondary HTN screening decision" },
+          { "view": "ClinicalSuspicionView", "purpose": "Assess clinical suspicion criteria" },
+          { "view": "SecondaryCausesListView", "purpose": "Display possible secondary causes (renal, endocrine, vascular)" },
+          { "view": "DiagnosticTestingView", "purpose": "Order appropriate diagnostic tests based on suspicion" },
+          { "view": "ResultInterpretationView", "purpose": "Interpret screening results" },
+          { "view": "TargetedTherapyView", "purpose": "Initiate specific therapy based on identified cause" },
+          { "view": "FollowUpView", "purpose": "Schedule monitoring and treatment response assessment" },
+          { "view": "DocumentationView", "purpose": "Log screening and diagnosis to health record" }
+        ]
+      },
+      "inputDataModel": {
+        "structName": "SecondaryHTNScreeningInputModel",
+        "requiredFields": {
+          "hasHypertension": { "type": "Bool?", "validation": "true/false" },
+          "clinicalSuspicionPresent": { "type": "Bool?", "validation": "true/false" }
+        },
+        "optionalFields": {
+          "age": { "type": "Int?", "validation": "18-120" },
+          "resistantHypertension": { "type": "Bool?", "options": ["true", "false"] },
+          "abruptOnset": { "type": "Bool?", "options": ["true", "false"] },
+          "familyHistorySecondaryHTN": { "type": "Bool?", "options": ["true", "false"] },
+          "specificSymptoms": { "type": "[String]?", "options": ["headache", "palpitations", "sweating", "hypokalemia"] }
+        },
+        "validationRules": [
+          "Must have hypertension diagnosis",
+          "Clinical suspicion must be documented if screening is ordered",
+          "Screening only recommended when suspicion present"
+        ]
+      },
+      "logicEngine": {
+        "rules": [
+          "IF hypertension present AND clinical suspicion present → recommend screening",
+          "IF hypertension present AND no clinical suspicion → do NOT screen (avoid overtesting)",
+          "Identify specific secondary cause based on clinical clues",
+          "Order targeted diagnostic tests based on suspected etiology",
+          "IF positive → initiate specific targeted therapy",
+          "IF negative → continue primary hypertension management"
+        ],
+        "thresholdsExample": {
+          "categories": [
+            { "name": "Clinical Suspicion Present", "action": "Screen for secondary hypertension", "cor": "Class 1", "loe": "C-EO" },
+            { "name": "No Clinical Suspicion", "action": "Do not screen", "cor": "Not applicable", "loe": "N/A" }
+          ],
+          "secondaryCauses": [
+            { "cause": "Renal artery stenosis", "clues": "abrupt onset, resistant HTN, bruit", "test": "Doppler ultrasound, CTA/MRA" },
+            { "cause": "Primary aldosteronism", "clues": "hypokalemia, resistant HTN", "test": "Aldosterone/renin ratio" },
+            { "cause": "Pheochromocytoma", "clues": "paroxysmal HTN, headache, palpitations", "test": "Plasma metanephrines" },
+            { "cause": "Renal parenchymal disease", "clues": "elevated creatinine, abnormal urinalysis", "test": "Renal ultrasound, biopsy" }
+          ]
+        }
+      },
+      "outputModel": {
+        "structName": "SecondaryHTNScreeningOutputModel",
+        "fields": {
+          "category": { "type": "String", "description": "'Screening Recommended' or 'No Screening Needed'" },
+          "consistency": { "type": "String?", "values": ["suspicion documented", "no suspicion documented"] },
+          "recommendedNextStep": { "type": "String", "description": "Specific diagnostic test based on clinical clues" },
+          "crisis": { "type": "Bool", "description": "false - screening not crisis" },
+          "crisisSymptoms": { "type": "[String]?", "condition": "if crisis == true", "value": null }
+        },
+        "constraints": ["deterministic", "renderable", "safe"]
+      },
+      "crisisRules": {
+        "thresholds": {
+          "sbp": "N/A",
+          "dbp": "N/A"
+        },
+        "symptomsToAsk": [],
+        "escalationLogic": {
+          "ifAnySymptomPresent": "N/A - screening not for acute crisis",
+          "ifNoSymptoms": "N/A"
+        },
+        "appDisplay": {
+          "screenType": "Standard clinical decision support",
+          "button": "Order Screening / Decline",
+          "behavior": "Normal routing with documentation"
+        }
+      },
+      "nextStepRouting": {
+        "providerSuggestion": "Order targeted diagnostic testing based on specific clinical suspicion",
+        "followUpTiming": "Upon receipt of diagnostic results",
+        "repeatMeasurement": "If initial screening negative but suspicion persists, consider advanced testing",
+        "navigatorEscalation": "Flag positive findings for specialist referral",
+        "documentation": "Log COR:1 LOE:C-EO recommendation to clinical decision record with rationale"
+      },
+      "tags": {
+        "acute": false,
+        "chronic": true,
+        "screening": true,
+        "diagnosis": true,
+        "management": true,
+        "priority": "medium",
+        "topic": "hypertension_secondary_screening"
+      }
+    }
+  }
+}

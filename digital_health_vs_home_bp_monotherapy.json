@@ -1,0 +1,105 @@
+{
+  "moduleTemplate": {
+    "name": "Digital_Health_Integration_vs_HBPM_Monotherapy",
+    "sections": {
+      "purpose": {
+        "clinicalProblem": {
+          "clinicalIntent": "Evaluate BP-lowering benefit of smartphone-enhanced HBPM versus HBPM alone in uncontrolled hypertension",
+          "whenToUse": "Clinical decision-making for digital health integration, hypertension management planning, technology selection",
+          "decisionOrAction": "Recommendation against smartphone-only HBPM enhancement + identify need for cointerventions"
+        }
+      },
+      "userFlow": {
+        "navigationPath": [
+          { "view": "DigitalHealthStartView", "purpose": "Entry point for digital health vs HBPM comparison" },
+          { "view": "EvidenceSummaryView", "purpose": "Display RCT findings on smartphone-enhanced HBPM" },
+          { "view": "DeviceSelectionView", "purpose": "Choose between cuffless device or traditional HBPM" },
+          { "view": "CufflessDeviceWarningView", "purpose": "Show heterogeneity and accuracy limitations" },
+          { "view": "PopulationSelectionView", "purpose": "Select patient population (adults, pregnant individuals)" },
+          { "view": "CointerventionView", "purpose": "Identify needed cointerventions for BP control" },
+          { "view": "RecommendationView", "purpose": "Display evidence-based recommendation" },
+          { "view": "ResearchGapsView", "purpose": "Highlight areas requiring additional studies" }
+        ]
+      },
+      "inputDataModel": {
+        "structName": "DigitalHealth_HBPM_InputModel",
+        "requiredFields": {
+          "patientPopulation": { "type": "String?", "validation": "Must be: adult_uncontrolled_BP, pregnant_chronic_HTN, pregnant_gestational_HTN" },
+          "deviceType": { "type": "String?", "validation": "Must be: smartphone_enhanced_HBPM, HBPM_alone, cuffless_device, reference_device" }
+        },
+        "optionalFields": {
+          "cointerventionProvided": { "type": "String?", "options": ["none", "lifestyle", "medication_adherence", "behavioral_coaching"] },
+          "previousBPControl": { "type": "Bool?" }
+        },
+        "validationRules": [
+          "Patient population must be specified",
+          "Device type must be selected",
+          "Cuffless device requires acknowledgment of heterogeneity risk"
+        ]
+      },
+      "logicEngine": {
+        "rules": [
+          "If smartphone-enhanced HBPM vs HBPM alone in adults with uncontrolled BP → NO BP-lowering benefit",
+          "If no BP-lowering benefit detected → recommend cointerventions",
+          "If cuffless device vs reference device → calculate pooled mean difference",
+          "If SBP pooled mean difference = 3.42 mm Hg (95% CI: -2.17 to 9.01) → no statistically significant difference",
+          "If DBP pooled mean difference = 1.16 mm Hg (95% CI: -1.26 to 3.58) → no statistically significant difference",
+          "If cuffless device recommended → flag heterogeneity risk (underestimation/overestimation potential)",
+          "If patient is pregnant with chronic or gestational hypertension → flag need for additional research",
+          "If HBPM used without cointervention → recommend adding interventions for meaningful BP control"
+        ],
+        "thresholdsExample": {
+          "categories": [
+            { "name": "Smartphone-only HBPM Enhancement", "effect": "No benefit", "comparator": "HBPM alone", "population": "Adults with uncontrolled BP", "recommendation": "Not recommended" },
+            { "name": "HBPM + Cointerventions", "effect": "Meaningful BP control", "comparator": "HBPM alone", "population": "Adults with uncontrolled BP", "recommendation": "Recommended" },
+            { "name": "Cuffless Devices", "effect": "No statistical difference (SBP: +3.42, DBP: +1.16)", "comparator": "Reference devices", "population": "General", "recommendation": "Cannot recommend for clinical use yet" },
+            { "name": "Digital Health in Pregnancy", "effect": "Insufficient evidence", "comparator": "Standard HBPM", "population": "Pregnant individuals with chronic/gestational HTN", "recommendation": "Additional studies required" }
+          ]
+        }
+      },
+      "outputModel": {
+        "structName": "DigitalHealth_HBPM_OutputModel",
+        "fields": {
+          "category": { "type": "String", "description": "e.g., 'Smartphone-only HBPM: No Benefit'" },
+          "consistency": { "type": "String?", "values": ["consistent_across_RCTs", "heterogeneous_device_results"] },
+          "recommendedNextStep": { "type": "String", "description": "e.g., 'Add cointerventions to HBPM' or 'Wait for more research'" },
+          "crisis": { "type": "Bool", "description": "false" },
+          "crisisSymptoms": { "type": "[String]?", "condition": "if crisis == true", "value": null }
+        },
+        "constraints": ["deterministic", "renderable", "safe"]
+      },
+      "crisisRules": {
+        "thresholds": {
+          "sbp": "N/A",
+          "dbp": "N/A"
+        },
+        "symptomsToAsk": [],
+        "escalationLogic": {
+          "ifAnySymptomPresent": "N/A - evidence evaluation module only",
+          "ifNoSymptoms": "N/A"
+        },
+        "appDisplay": {
+          "screenType": "Standard evidence display",
+          "button": "N/A",
+          "behavior": "Normal routing"
+        }
+      },
+      "nextStepRouting": {
+        "providerSuggestion": "Do not use smartphone-only HBPM without cointerventions; consider adding lifestyle or behavioral interventions",
+        "followUpTiming": "Re-evaluate when new RCT evidence available",
+        "repeatMeasurement": "Monitor for cuffless device validation studies",
+        "navigatorEscalation": "Flag pregnant patients as needing specialized HBPM protocols",
+        "documentation": "Log device type, cointerventions, and evidence-based recommendation"
+      },
+      "tags": {
+        "acute": false,
+        "chronic": true,
+        "screening": false,
+        "diagnosis": false,
+        "management": true,
+        "priority": "medium",
+        "topic": "digital_health_hypertension"
+      }
+    }
+  }
+}

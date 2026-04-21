@@ -1,0 +1,128 @@
+{
+  "moduleTemplate": {
+    "name": "Office_BP_Measurement_Instructions",
+    "sections": {
+      "purpose": {
+        "clinicalProblem": {
+          "clinicalIntent": "Standardized protocol for accurate office-based blood pressure measurement",
+          "whenToUse": "Initial patient encounter, routine check-ups, hypertension screening visits",
+          "decisionOrAction": "Validated BP reading protocol + patient instructions + measurement averaging"
+        }
+      },
+      "userFlow": {
+        "navigationPath": [
+          { "view": "BPPrepStartView", "purpose": "Entry point - display pre-measurement instructions checklist" },
+          { "view": "PatientPreparationView", "purpose": "Guide patient through 30-minute prep (avoid caffeine/exercise/smoking, empty bladder)" },
+          { "view": "EnvironmentCheckView", "purpose": "Verify temperature-controlled room, validated device, correct cuff size" },
+          { "view": "PositioningView", "purpose": "Ensure proper positioning (bare arm, supported at heart level, sitting with back support, feet flat, legs uncrossed)" },
+          { "view": "RestPeriodView", "purpose": "5+ minutes quiet rest - no talking, no phone use" },
+          { "view": "FirstMeasurementView", "purpose": "Take first BP reading" },
+          { "view": "WaitIntervalView", "purpose": "1 minute wait between measurements" },
+          { "view": "SecondMeasurementView", "purpose": "Take second BP reading" },
+          { "view": "AveragingView", "purpose": "Calculate and display average of readings" },
+          { "view": "ResultsCommunicationView", "purpose": "Provide readings verbally and in writing to patient" }
+        ]
+      },
+      "inputDataModel": {
+        "structName": "OfficeBPMeasurementInputModel",
+        "requiredFields": {
+          "systolic1": { "type": "Int?", "validation": "70-250" },
+          "diastolic1": { "type": "Int?", "validation": "40-150" },
+          "systolic2": { "type": "Int?", "validation": "70-250" },
+          "diastolic2": { "type": "Int?", "validation": "40-150" }
+        },
+        "optionalFields": {
+          "caffeineLast30min": { "type": "Bool?", "options": ["true", "false"] },
+          "exerciseLast30min": { "type": "Bool?", "options": ["true", "false"] },
+          "smokingLast30min": { "type": "Bool?", "options": ["true", "false"] },
+          "bladderEmpty": { "type": "Bool?", "options": ["true", "false"] },
+          "cuffSize": { "type": "String?", "options": ["small", "medium", "large", "extra-large"] },
+          "armUsed": { "type": "String?", "options": ["left", "right"] },
+          "deviceValidated": { "type": "Bool?", "options": ["true", "false"] }
+        },
+        "validationRules": [
+          "systolic: 70-250",
+          "diastolic: 40-150",
+          "systolic >= diastolic",
+          "systolic1 and systolic2 within 10 mmHg for consistency",
+          "All pre-measurement conditions must be met"
+        ]
+      },
+      "logicEngine": {
+        "rules": [
+          "Verify patient avoided caffeine, exercise, smoking for ≥30 min",
+          "Verify bladder emptied",
+          "Confirm validated device from validatebp.org",
+          "Check correct cuff size on bare arm",
+          "Confirm arm supported at heart level",
+          "Verify patient seated correctly (feet on floor, legs uncrossed, back supported)",
+          "Enforce 5+ minutes quiet rest (no talking, no phone)",
+          "Verify temperature-controlled room",
+          "Take ≥2 measurements ≥1 minute apart",
+          "Calculate average of all readings",
+          "Flag protocol violations that could affect accuracy"
+        ],
+        "thresholdsExample": {
+          "categories": [
+            { "name": "Protocol_Compliant", "criteria": "All pre-measurement conditions met", "action": "Proceed with measurement" },
+            { "name": "Protocol_Violation", "criteria": "Any condition not met", "action": "Display warning, recommend correction before measurement" },
+            { "name": "Readings_Consistent", "criteria": "Difference ≤10 mmHg between readings", "action": "Average and record" },
+            { "name": "Readings_Inconsistent", "criteria": "Difference >10 mmHg between readings", "action": "Flag for repeat measurement" }
+          ]
+        }
+      },
+      "outputModel": {
+        "structName": "OfficeBPMeasurementOutputModel",
+        "fields": {
+          "category": { "type": "String", "description": "e.g., 'Protocol Compliant' or 'Protocol Violation'" },
+          "averageSystolic": { "type": "Int", "description": "Mean of all systolic readings" },
+          "averageDiastolic": { "type": "Int", "description": "Mean of all diastolic readings" },
+          "measurementCount": { "type": "Int", "description": "Number of readings taken" },
+          "protocolAdherence": { "type": "Bool", "description": "True if all pre-measurement conditions met" },
+          "protocolViolations": { "type": "[String]", "description": "List of any violated conditions" },
+          "readingsConsistent": { "type": "Bool", "description": "True if readings differ by ≤10 mmHg" },
+          "verbalAndWrittenProvided": { "type": "Bool", "description": "True if results communicated to patient" }
+        },
+        "constraints": ["deterministic", "renderable", "safe"]
+      },
+      "crisisRules": {
+        "thresholds": {
+          "sbp": "≥180",
+          "dbp": "≥120"
+        },
+        "symptomsToAsk": [
+          "Chest pain",
+          "Shortness of breath",
+          "Severe headache",
+          "Vision changes",
+          "Neurological symptoms"
+        ],
+        "escalationLogic": {
+          "ifAnySymptomPresent": "Immediate ER referral",
+          "ifNoSymptoms": "Repeat measurement, consider same-day follow-up"
+        },
+        "appDisplay": {
+          "screenType": "Standard result screen (or crisis alert if thresholds met)",
+          "button": "Print/write readings for patient",
+          "behavior": "Provide verbal and written results"
+        }
+      },
+      "nextStepRouting": {
+        "providerSuggestion": "Document average readings in patient chart, classify BP stage",
+        "followUpTiming": "Repeat measurement at next visit or sooner if indicated",
+        "repeatMeasurement": "Take 2+ readings ≥1 minute apart each visit",
+        "navigatorEscalation": "Flag protocol violations for quality improvement",
+        "documentation": "Log all readings, average, protocol adherence, and patient communication confirmation"
+      },
+      "tags": {
+        "acute": false,
+        "chronic": true,
+        "screening": true,
+        "diagnosis": true,
+        "management": false,
+        "priority": "high",
+        "topic": "blood_pressure_measurement"
+      }
+    }
+  }
+}

@@ -1,0 +1,114 @@
+{
+  "moduleTemplate": {
+    "name": "Antihypertensive_Medication_Adherence_Strategies",
+    "sections": {
+      "purpose": {
+        "clinicalProblem": {
+          "clinicalIntent": "Evidence-based strategies to improve medication adherence in hypertensive patients",
+          "whenToUse": "Poor BP control despite prescribed therapy, patient-reported non-adherence, refill gaps, or suboptimal therapeutic response",
+          "decisionOrAction": "Selection of appropriate adherence-enhancing strategy based on patient context and barriers"
+        }
+      },
+      "userFlow": {
+        "navigationPath": [
+          { "view": "AdherenceAssessmentView", "purpose": "Screen for medication adherence issues" },
+          { "view": "StrategySelectionView", "purpose": "Display 8 evidence-based strategies" },
+          { "view": "BarrierIdentificationView", "purpose": "Identify specific adherence barriers" },
+          { "view": "StrategyMatchingView", "purpose": "Match barriers to appropriate strategies" },
+          { "view": "PatientPreferenceView", "purpose": "Integrate patient values and shared decision-making" },
+          { "view": "InterventionPlanningView", "purpose": "Customize selected strategy implementation" },
+          { "view": "FollowUpScheduleView", "purpose": "Set monitoring and reinforcement timeline" },
+          { "view": "DocumentationView", "purpose": "Log intervention to health record" }
+        ]
+      },
+      "inputDataModel": {
+        "structName": "AdherenceStrategiesInputModel",
+        "requiredFields": {
+          "adherenceBarrier": { "type": "String?", "validation": "polypharmacy, side effects, forgetfulness, cost, psychosocial, access" },
+          "currentRegimenComplexity": { "type": "String?", "validation": "once daily, twice daily, three or more times daily" }
+        },
+        "optionalFields": {
+          "pillCount": { "type": "Int?", "validation": "1-20" },
+          "hasPharmacistAccess": { "type": "Bool?" },
+          "hasHomeMonitor": { "type": "Bool?" },
+          "reportedStress": { "type": "String?", "options": ["none", "mild", "moderate", "severe"] },
+          "reportedAnxiety": { "type": "String?", "options": ["none", "mild", "moderate", "severe"] },
+          "reportedDepression": { "type": "String?", "options": ["none", "mild", "moderate", "severe"] }
+        },
+        "validationRules": [
+          "At least one adherence barrier should be identified",
+          "BP should be documented before and after intervention",
+          "Patient preference must be recorded for shared decision-making"
+        ]
+      },
+      "logicEngine": {
+        "rules": [
+          "If pill burden > 1 daily → consider dose consolidation",
+          "If multiple separate pills → consider single pill combination",
+          "If forgetfulness or routine disruption → offer medication reminders/synchronization",
+          "If pharmacist available → refer for education/coaching",
+          "If patient has home monitor → activate electronic feedback loop",
+          "If stress/anxiety/depression present → offer mindfulness or counseling",
+          "Always integrate patient preferences via shared decision-making",
+          "Consider self-management interventions for activated patients"
+        ],
+        "thresholdsExample": {
+          "categories": [
+            { "strategy": "Dose consolidation", "indication": "Multiple daily doses", "evidence": "High" },
+            { "strategy": "Single pill combination", "indication": "≥2 separate antihypertensives", "evidence": "High" },
+            { "strategy": "Pharmacist education/coaching", "indication": "Knowledge deficit or need for reinforcement", "evidence": "High" },
+            { "strategy": "Electronic/home BP monitoring", "indication": "Poor self-monitoring or feedback loop", "evidence": "High" },
+            { "strategy": "Shared decision-making", "indication": "All patients, always", "evidence": "High" },
+            { "strategy": "Medication synchronization", "indication": "Multiple medications with different refill dates", "evidence": "Moderate" },
+            { "strategy": "Reminder aids", "indication": "Forgetfulness or cognitive barriers", "evidence": "Moderate" },
+            { "strategy": "Mindfulness/stress counseling", "indication": "High stress, anxiety, or depression", "evidence": "Moderate" },
+            { "strategy": "Self-management interventions", "indication": "Activated, health-literate patients", "evidence": "Moderate" }
+          ]
+        }
+      },
+      "outputModel": {
+        "structName": "AdherenceStrategiesOutputModel",
+        "fields": {
+          "category": { "type": "String", "description": "Primary selected strategy" },
+          "consistency": { "type": "String?", "values": ["single strategy", "multifaceted intervention"] },
+          "recommendedNextStep": { "type": "String", "description": "Implementation plan for selected strategy" },
+          "crisis": { "type": "Bool", "description": "false unless BP crisis despite adherence strategies" },
+          "crisisSymptoms": { "type": "[String]?", "condition": "if crisis == true" }
+        },
+        "constraints": ["deterministic", "renderable", "safe"]
+      },
+      "crisisRules": {
+        "thresholds": {
+          "sbp": "N/A - adherence strategies are not crisis management",
+          "dbp": "N/A"
+        },
+        "symptomsToAsk": [],
+        "escalationLogic": {
+          "ifAnySymptomPresent": "N/A",
+          "ifNoSymptoms": "N/A"
+        },
+        "appDisplay": {
+          "screenType": "Standard clinical decision support",
+          "button": "N/A",
+          "behavior": "Normal routing"
+        }
+      },
+      "nextStepRouting": {
+        "providerSuggestion": "Implement selected strategy within 1-2 weeks and reassess BP",
+        "followUpTiming": "Follow up in 4-6 weeks to evaluate adherence improvement",
+        "repeatMeasurement": "Monitor BP at each visit and assess adherence via pill count or pharmacy refill data",
+        "navigatorEscalation": "Flag persistent non-adherence despite multimodal strategies",
+        "documentation": "Log selected adherence strategy and patient preference to care plan"
+      },
+      "tags": {
+        "acute": false,
+        "chronic": true,
+        "screening": false,
+        "diagnosis": false,
+        "management": true,
+        "priority": "high",
+        "topic": "hypertension_adherence"
+      }
+    }
+  }
+}

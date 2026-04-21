@@ -1,0 +1,255 @@
+{
+  "moduleTemplate": {
+    "name": "Intravenous_Antihypertensive_Drugs_Hypertensive_Emergencies",
+    "sections": {
+      "purpose": {
+        "clinicalProblem": {
+          "clinicalIntent": "Treatment of hypertensive emergencies with IV antihypertensive agents",
+          "whenToUse": "Hypertensive crisis (SBP ≥180 or DBP ≥120) with acute target organ damage",
+          "decisionOrAction": "Select appropriate IV agent based on contraindications, patient factors, and clinical scenario"
+        }
+      },
+      "userFlow": {
+        "navigationPath": [
+          { "view": "HypertensiveEmergencyStartView", "purpose": "Entry point confirming hypertensive emergency" },
+          { "view": "DrugClassSelectionView", "purpose": "Select drug class (CCB, Vasodilator, Adrenergic Blocker, etc.)" },
+          { "view": "SpecificDrugView", "purpose": "Display available drugs within selected class" },
+          { "view": "DosingCalculatorView", "purpose": "Calculate initial and maintenance doses based on weight" },
+          { "view": "ContraindicationCheckView", "purpose": "Screen for absolute/relative contraindications" },
+          { "view": "MonitoringRequirementsView", "purpose": "Display BP monitoring needs (intra-arterial recommended for nitroprusside)" },
+          { "view": "ToxicityMonitoringView", "purpose": "Check for cyanide/thiocyanate toxicity if on nitroprusside" },
+          { "view": "AdministrationSummaryView", "purpose": "Final drug, dose, infusion instructions, and special warnings" }
+        ]
+      },
+      "inputDataModel": {
+        "structName": "IVAntihypertensiveInputModel",
+        "requiredFields": {
+          "systolicBP": { "type": "Int?", "validation": "≥180" },
+          "diastolicBP": { "type": "Int?", "validation": "≥120" },
+          "targetOrganDamage": { "type": "Bool?", "validation": "Must be true for hypertensive emergency" },
+          "weightKg": { "type": "Double?", "validation": "Required for weight-based dosing" }
+        },
+        "optionalFields": {
+          "age": { "type": "Int?", "options": ["≥65 requires lower doses for nitroprusside"] },
+          "pregnancy": { "type": "Bool?", "options": ["Contraindication for enalaprilat, caution for nitroprusside"] },
+          "kidneyDisease": { "type": "Bool?", "options": ["sCr >3 increases thiocyanate toxicity risk"] },
+          "liverDysfunction": { "type": "Bool?", "options": ["Increases cyanide toxicity risk"] },
+          "aorticStenosis": { "type": "Bool?", "options": ["Contraindication for nicardipine"] },
+          "heartFailure": { "type": "Bool?", "options": ["Contraindication for esmolol, labetalol"] },
+          "bradycardia": { "type": "Bool?", "options": ["Contraindication for esmolol, labetalol"] },
+          "reactiveAirwayDisease": { "type": "Bool?", "options": ["Contraindication for labetalol, caution for esmolol"] },
+          "acuteCoronarySyndrome": { "type": "Bool?", "options": ["Indication for nitroglycerin"] },
+          "acuteCerebrovascularDisease": { "type": "Bool?", "options": ["Avoid nitroprusside unless no alternative"] },
+          "soyEggAllergy": { "type": "Bool?", "options": ["Contraindication for clevidipine"] },
+          "sulfiteAllergy": { "type": "Bool?", "options": ["Contraindication for fenoldopam"] },
+          "glaucoma": { "type": "Bool?", "options": ["Contraindication for fenoldopam"] },
+          "renalArteryStenosis": { "type": "Bool?", "options": ["Contraindication for enalaprilat"] }
+        },
+        "validationRules": [
+          "SBP ≥180 or DBP ≥120 with target organ damage",
+          "Check all contraindications before drug selection",
+          "Weight required for mcg/kg/min dosing"
+        ]
+      },
+      "logicEngine": {
+        "rules": [
+          "Identify if hypertensive emergency (target organ damage present)",
+          "Screen for contraindications to narrow drug options",
+          "Select drug based on clinical scenario (ACS, pulmonary edema, catecholamine excess, etc.)",
+          "Calculate initial dose based on weight and renal/hepatic function",
+          "Apply age adjustments (lower doses for elderly with nitroprusside)",
+          "Flag toxicity risks (cyanide/thiocyanate for nitroprusside ≥3 mcg/kg/min or ≥3 days)",
+          "Recommend intra-arterial BP monitoring for nitroprusside",
+          "Warn if hydralazine selected as first-line (undesirable due to unpredictability)"
+        ],
+        "thresholdsExample": {
+          "drugClasses": [
+            {
+              "class": "CCB — dihydropyridines",
+              "drugs": [
+                {
+                  "name": "Nicardipine",
+                  "doseRange": "Initial 5 mg/h, increase q5min by 2.5 mg/h to max 15 mg/h",
+                  "contraindications": ["Advanced aortic stenosis"],
+                  "specialNotes": ["No dose adjustment for ≥65 y", "No negative inotropic/chronotropic effects"]
+                },
+                {
+                  "name": "Clevidipine",
+                  "doseRange": "Initial 1-2 mg/h, double q90s until BP approaches target, then increase by less than double q5-10min; max 21 mg/h; max duration 72h",
+                  "contraindications": ["Soybean/soy product allergy", "Egg/egg product allergy", "Defective lipid metabolism (pathological hyperlipidemia, lipoid nephrosis, acute pancreatitis)"],
+                  "specialNotes": ["No negative inotropic/chronotropic effects", "Decreased risk of reflex tachycardia"]
+                }
+              ]
+            },
+            {
+              "class": "Vasodilators — nitric-oxide dependent",
+              "drugs": [
+                {
+                  "name": "Sodium nitroprusside",
+                  "doseRange": "Initial 0.3-0.5 mcg/kg/min; increase 0.5 mcg/kg/min q5min; max 10 mcg/kg/min; shortest possible duration",
+                  "contraindications": ["Relative: acute cerebrovascular disease (unless no alternative)"],
+                  "specialNotes": [
+                    "Intra-arterial BP monitoring recommended to prevent overshoot",
+                    "Lower dose for older adults",
+                    "Tachyphylaxis common with extended use",
+                    "No negative inotropic/chronotropic effects",
+                    "Avoid in acute cerebrovascular disease unless no alternative",
+                    "Use cautiously in pregnancy or older adults",
+                    "Cyanide toxicity risk if infusion ≥3 mcg/kg/min and/or ≥3 days (increased with liver dysfunction, CKD)",
+                    "Thiocyanate toxicity risk if sCr >3",
+                    "Toxicity presents: metabolic acidosis, altered mental status, cardiac arrhythmia",
+                    "If toxicity: discontinue, administer sodium thiosulfate or cyanocobalamin"
+                  ]
+                },
+                {
+                  "name": "Nitroglycerin",
+                  "doseRange": "Initial 5 mcg/min; increase 5 mcg/min q3-5min; max 200 mcg/min",
+                  "contraindications": ["Volume depletion"],
+                  "specialNotes": [
+                    "Use ONLY in patients with acute coronary syndrome AND/OR acute pulmonary edema",
+                    "Tachyphylaxis common with extended use"
+                  ]
+                }
+              ]
+            },
+            {
+              "class": "Vasodilators — direct",
+              "drugs": [
+                {
+                  "name": "Hydralazine",
+                  "doseRange": "Initial 10 mg slow IV (max initial 20 mg); repeat q4-6h; max cumulative 200 mg/24h",
+                  "specialNotes": [
+                    "BP decreases within 10-30 min, lasts 2-4h",
+                    "Undesirable first-line agent for acute treatment due to unpredictability and prolonged duration"
+                  ]
+                }
+              ]
+            },
+            {
+              "class": "Adrenergic blockers — beta-1 receptor selective antagonist",
+              "drugs": [
+                {
+                  "name": "Esmolol",
+                  "doseRange": "Loading: 500-1,000 mcg/kg/min over 1 min, then 50 mcg/kg/min infusion. Repeat bolus and increase infusion by 50 mcg/kg/min increments; max 300 mcg/kg/min",
+                  "contraindications": ["Concurrent beta-blocker therapy", "Bradycardia", "Decompensated HF"],
+                  "specialNotes": [
+                    "Monitor for bradycardia",
+                    "Higher doses may block beta-2 receptors, impact lung function in reactive airway/COPD"
+                  ]
+                }
+              ]
+            },
+            {
+              "class": "Adrenergic blockers — combined alpha-1 and nonselective beta receptor antagonist",
+              "drugs": [
+                {
+                  "name": "Labetalol",
+                  "doseRange": "Initial 0.3-1.0 mg/kg (max 20 mg) slow IV q2min OR 0.4-1.0 mg/kg/h infusion up to 3 mg/kg/h; max cumulative 300 mg/24h",
+                  "contraindications": ["Reactive airway disease", "Obstructive pulmonary disease", "Second-/third-degree heart block", "Bradycardia"],
+                  "specialNotes": [
+                    "Especially useful in hyperadrenergic syndromes",
+                    "May worsen HF"
+                  ]
+                }
+              ]
+            },
+            {
+              "class": "Adrenergic blockers — nonselective alpha receptor antagonist",
+              "drugs": [
+                {
+                  "name": "Phentolamine",
+                  "doseRange": "IV bolus 5 mg; additional boluses q10min as needed; max cumulative 50 mg/24h",
+                  "specialNotes": [
+                    "Use in hypertensive emergencies from catecholamine excess: pheochromocytoma, MAOI interactions, cocaine toxicity, amphetamine overdose, clonidine withdrawal"
+                  ]
+                }
+              ]
+            },
+            {
+              "class": "Dopamine-1-receptor selective agonist",
+              "drugs": [
+                {
+                  "name": "Fenoldopam",
+                  "doseRange": "Initial 0.1-0.3 mcg/kg/min; increase 0.05-0.1 mcg/kg/min q15min; max 1.6 mcg/kg/min",
+                  "contraindications": ["Risk of increased intraocular pressure (glaucoma)", "Risk of increased intracranial pressure", "Sulfite allergy"],
+                  "specialNotes": []
+                }
+              ]
+            },
+            {
+              "class": "ACE inhibitor",
+              "drugs": [
+                {
+                  "name": "Enalaprilat",
+                  "doseRange": "Initial 1.25 mg over 5 min; increase up to 5 mg q6h; max cumulative 50 mg/24h",
+                  "contraindications": ["Pregnancy", "Acute MI", "Bilateral renal artery stenosis"],
+                  "specialNotes": [
+                    "Useful in hypertensive emergencies with high plasma renin activity",
+                    "Poorly defined dose adjustments for kidney failure",
+                    "May worsen kidney injury in CKD",
+                    "Slow onset (15 min), unpredictable BP response"
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      },
+      "outputModel": {
+        "structName": "IVAntihypertensiveOutputModel",
+        "fields": {
+          "category": { "type": "String", "description": "e.g., 'CCB — dihydropyridines: Nicardipine'" },
+          "selectedDrug": { "type": "String", "description": "Name of selected IV agent" },
+          "initialDose": { "type": "String", "description": "Calculated initial dose with units" },
+          "titrationInstructions": { "type": "String", "description": "How to adjust dose based on BP response" },
+          "maximumDose": { "type": "String", "description": "Maximum allowable dose or infusion rate" },
+          "durationLimit": { "type": "String?", "description": "Maximum duration if applicable (e.g., clevidipine 72h, nitroprusside as short as possible)" },
+          "contraindicationsFlagged": { "type": "[String]", "description": "List of patient-specific contraindications" },
+          "monitoringRequired": { "type": "[String]", "description": "BP monitoring type, toxicity labs, cardiac monitoring" },
+          "toxicityRisk": { "type": "String?", "description": "e.g., 'Cyanide toxicity risk if infusion ≥3 mcg/kg/min and/or ≥3 days'" },
+          "specialWarnings": { "type": "[String]", "description": "Age adjustments, pregnancy, organ dysfunction cautions" }
+        },
+        "constraints": ["deterministic", "renderable", "safe", "weight-based dosing accurate"]
+      },
+      "crisisRules": {
+        "thresholds": {
+          "sbp": "≥180",
+          "dbp": "≥120"
+        },
+        "symptomsToAsk": [
+          "Acute target organ damage symptoms",
+          "Chest pain (ACS)",
+          "Shortness of breath (pulmonary edema)",
+          "Neurological symptoms (stroke, encephalopathy)",
+          "Acute vision changes",
+          "Nausea/vomiting (possible cyanide toxicity if on nitroprusside)"
+        ],
+        "escalationLogic": {
+          "ifAnySymptomPresent": "Admit to ICU, start IV antihypertensive, monitor BP continuously",
+          "ifNoSymptoms": "May still be hypertensive urgency, consider oral agents"
+        },
+        "appDisplay": {
+          "screenType": "Red alert crisis screen with IV drug selection",
+          "button": "Emergency drug calculator + Administration instructions",
+          "behavior": "Do not discharge; escalate to inpatient/ICU care"
+        }
+      },
+      "nextStepRouting": {
+        "providerSuggestion": "Admit to ICU or step-down unit for continuous BP monitoring",
+        "followUpTiming": "Check BP q5-15min during titration, then q1h once stable",
+        "repeatMeasurement": "Continuous intra-arterial monitoring recommended for nitroprusside",
+        "navigatorEscalation": "Page on-call hospitalist or ICU team immediately",
+        "documentation": "Log drug, dose, infusion rate, BP readings q5min, toxicity monitoring"
+      },
+      "tags": {
+        "acute": true,
+        "chronic": false,
+        "screening": false,
+        "diagnosis": false,
+        "management": true,
+        "priority": "critical",
+        "topic": "hypertensive_emergency_IV_drugs"
+      }
+    }
+  }
+}

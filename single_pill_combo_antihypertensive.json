@@ -1,0 +1,164 @@
+{
+  "moduleTemplate": {
+    "name": "Antihypertensive_SPC_Formulary",
+    "sections": {
+      "purpose": {
+        "clinicalProblem": {
+          "clinicalIntent": "Provide comprehensive reference of commercially available single-pill combination antihypertensive medications",
+          "whenToUse": "Medication selection, prescription writing, generic availability checking, dose selection",
+          "decisionOrAction": "SPC identification + dose availability + generic status"
+        }
+      },
+      "userFlow": {
+        "navigationPath": [
+          { "view": "SPCFormularyStartView", "purpose": "Entry point for medication lookup" },
+          { "view": "ClassCombinationSelectView", "purpose": "Select drug class combination (e.g., ACEi+Thiazide)" },
+          { "view": "MedicationListView", "purpose": "Display medications in selected class" },
+          { "view": "MedicationDetailView", "purpose": "Show doses and generic availability" },
+          { "view": "DoseSelectionView", "purpose": "Select specific strength" },
+          { "view": "PrescriptionGenerationView", "purpose": "Generate prescription-ready output" },
+          { "view": "GenericAlternativeView", "purpose": "Suggest generic if available" },
+          { "view": "DocumentationView", "purpose": "Log selection to patient record" }
+        ]
+      },
+      "inputDataModel": {
+        "structName": "SPCFormularyInputModel",
+        "requiredFields": {
+          "medicationClass": { "type": "String?", "validation": "Must match one of defined class combinations" },
+          "medicationName": { "type": "String?", "validation": "Must exist in formulary" }
+        },
+        "optionalFields": {
+          "doseStrength": { "type": "String?", "validation": "Must be available for selected medication" },
+          "genericOnly": { "type": "Bool?", "description": "Filter to generic-available only" },
+          "patentExpiryFilter": { "type": "Int?", "description": "Year filter for brand-only medications" }
+        },
+        "validationRules": [
+          "Medication class must be valid combination",
+          "Medication name must exist in selected class",
+          "Dose strength must be in available doses list"
+        ]
+      },
+      "logicEngine": {
+        "rules": [
+          "Group medications by class combination",
+          "Filter by generic availability if requested",
+          "Check patent expiration for brand-only medications",
+          "Return available dose strengths for selected medication",
+          "Flag if generic substitution is available"
+        ],
+        "thresholdsExample": {
+          "classCombinations": [
+            {
+              "name": "ACEi or ARB + Thiazide-type diuretic",
+              "medications": [
+                { "name": "Benazepril + HCTZ", "genericAvailable": true, "doses": ["10 mg/12.5 mg", "20 mg/12.5 mg", "20 mg/25 mg"] },
+                { "name": "Captopril + HCTZ", "genericAvailable": true, "doses": ["25 mg/15 mg", "25 mg/25 mg", "50 mg/15 mg", "50 mg/25 mg"] },
+                { "name": "Enalapril + HCTZ", "genericAvailable": true, "doses": ["5 mg/12.5 mg", "10 mg/25 mg"] },
+                { "name": "Fosinopril + HCTZ", "genericAvailable": true, "doses": ["10 mg/12.5 mg", "20 mg/12.5 mg", "20 mg/25 mg"] },
+                { "name": "Moxipril + HCTZ", "genericAvailable": true, "doses": ["7.5 mg/12.5 mg", "15 mg/12.5 mg", "15 mg/25 mg"] },
+                { "name": "Quinapril + HCTZ", "genericAvailable": true, "doses": ["10 mg/12.5 mg", "20 mg/12.5 mg", "20 mg/25 mg"] },
+                { "name": "Azilsartan + chlorthalidone", "genericAvailable": false, "patentExpiration": 2030, "doses": ["40 mg/12.5 mg", "40 mg/25 mg"] },
+                { "name": "Candesartan + HCTZ", "genericAvailable": true, "doses": ["16 mg/12.5 mg", "32 mg/12.5 mg", "32 mg/25 mg"] },
+                { "name": "Irbesartan + HCTZ", "genericAvailable": true, "doses": ["150 mg/12.5 mg", "300 mg/12.5 mg", "300 mg/25 mg"] },
+                { "name": "Losartan + HCTZ", "genericAvailable": true, "doses": ["50 mg/12.5 mg", "100 mg/12.5 mg", "100 mg/25 mg"] },
+                { "name": "Olmesartan + HCTZ", "genericAvailable": true, "doses": ["20 mg/12.5 mg", "40 mg/12.5 mg", "40 mg/25 mg"] },
+                { "name": "Telmisartan + HCTZ", "genericAvailable": true, "doses": ["40 mg/12.5 mg", "80 mg/12.5 mg", "80 mg/25 mg"] },
+                { "name": "Valsartan + HCTZ", "genericAvailable": true, "doses": ["80 mg/12.5 mg", "160 mg/12.5 mg", "160 mg/25 mg", "320 mg/12.5 mg", "320 mg/25 mg"] }
+              ]
+            },
+            {
+              "name": "ACEi or ARB + Calcium channel blocker",
+              "medications": [
+                { "name": "Benazepril + amlodipine", "genericAvailable": true, "doses": ["10 mg/2.5 mg", "10 mg/5 mg", "20 mg/5 mg", "20 mg/10 mg", "40 mg/5 mg", "40 mg/10 mg"] },
+                { "name": "Perindopril + amlodipine", "genericAvailable": false, "patentExpiration": 2029, "doses": ["3.5 mg/2.5 mg", "7 mg/5 mg", "14 mg/10 mg"] },
+                { "name": "Trandolapril + verapamil", "genericAvailable": true, "doses": ["1 mg/240 mg", "2 mg/180 mg", "2 mg/240 mg", "4 mg/240 mg"] },
+                { "name": "Olmesartan + amlodipine", "genericAvailable": true, "doses": ["20 mg/5 mg", "20 mg/10 mg", "40 mg/5 mg", "40 mg/10 mg"] },
+                { "name": "Telmisartan + amlodipine", "genericAvailable": true, "doses": ["40 mg/5 mg", "40 mg/10 mg", "80 mg/5 mg", "80 mg/10 mg"] },
+                { "name": "Valsartan + amlodipine", "genericAvailable": true, "doses": ["160 mg/5 mg", "160 mg/10 mg", "320 mg/5 mg", "320 mg/10 mg"] }
+              ]
+            },
+            {
+              "name": "ARB + Beta blocker",
+              "medications": [
+                { "name": "Valsartan + nebivolol", "genericAvailable": true, "doses": ["80 mg/5 mg"] }
+              ]
+            },
+            {
+              "name": "Beta blocker + Thiazide-type diuretics",
+              "medications": [
+                { "name": "Atenolol + chlorthalidone", "genericAvailable": true, "doses": ["50 mg/25 mg", "100 mg/25 mg"] },
+                { "name": "Bisoprolol + HCTZ", "genericAvailable": true, "doses": ["2.5 mg/6.25 mg", "4 mg/6.25 mg", "10 mg/6.25 mg"] },
+                { "name": "Metoprolol tartrate + HCTZ", "genericAvailable": true, "doses": ["50 mg/25 mg", "100 mg/25 mg", "100 mg/50 mg"] }
+              ]
+            },
+            {
+              "name": "Potassium-sparing diuretic + thiazide-type diuretics",
+              "medications": [
+                { "name": "Amiloride + HCTZ", "genericAvailable": true, "doses": ["5 mg/50 mg"] },
+                { "name": "Triamterene + HCTZ", "genericAvailable": true, "doses": ["37.5 mg/25 mg", "75 mg/50 mg"] }
+              ]
+            },
+            {
+              "name": "MRA + thiazide-type diuretics",
+              "medications": [
+                { "name": "Spironolactone + HCTZ", "genericAvailable": true, "doses": ["25 mg/25 mg"] }
+              ]
+            },
+            {
+              "name": "ARB + CCB + thiazide-type diuretics (Triple)",
+              "medications": [
+                { "name": "Olmesartan + amlodipine + HCTZ", "genericAvailable": true, "doses": ["20 mg/5 mg/12.5 mg", "40 mg/5 mg/12.5 mg", "40 mg/5 mg/25 mg", "40 mg/10 mg/12.5 mg", "40 mg/10 mg/25 mg"] },
+                { "name": "Valsartan + amlodipine + HCTZ", "genericAvailable": true, "doses": ["160 mg/5 mg/12.5 mg", "160 mg/5 mg/25 mg", "160 mg/10 mg/12.5 mg", "160 mg/10 mg/25 mg", "320 mg/10 mg/25 mg"] }
+              ]
+            }
+          ]
+        }
+      },
+      "outputModel": {
+        "structName": "SPCFormularyOutputModel",
+        "fields": {
+          "category": { "type": "String", "description": "e.g., 'ACEi or ARB + Thiazide-type diuretic'" },
+          "medicationName": { "type": "String", "description": "e.g., 'Benazepril + HCTZ'" },
+          "genericAvailable": { "type": "Bool" },
+          "patentExpiration": { "type": "Int?", "condition": "if genericAvailable == false" },
+          "availableDoses": { "type": "[String]" },
+          "selectedDose": { "type": "String?", "condition": "if dose selected" },
+          "isTripleTherapy": { "type": "Bool", "description": "true if 3 medications combined" }
+        },
+        "constraints": ["deterministic", "renderable", "safe"]
+      },
+      "crisisRules": {
+        "thresholds": {
+          "sbp": "N/A",
+          "dbp": "N/A"
+        },
+        "symptomsToAsk": [],
+        "escalationLogic": {
+          "ifAnySymptomPresent": "N/A - formulary reference only",
+          "ifNoSymptoms": "N/A"
+        },
+        "appDisplay": {
+          "screenType": "Formulary reference display",
+          "button": "N/A",
+          "behavior": "Normal routing"
+        }
+      },
+      "nextStepRouting": {
+        "providerSuggestion": "Select appropriate SPC based on BP control and tolerability",
+        "followUpTiming": "Check BP response in 2-4 weeks",
+        "repeatMeasurement": "Monitor for adverse effects",
+        "navigatorEscalation": "Flag if generic available for cost optimization",
+        "documentation": "Log prescribed SPC to medication list"
+      },
+      "tags": {
+        "acute": false,
+        "chronic": true,
+        "screening": false,
+        "diagnosis": false,
+        "management": true,
+        "priority": "medium",
+        "topic": "antihypertensive_medications"
+      }
+    }
+  }
+}

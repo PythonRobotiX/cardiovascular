@@ -1,0 +1,145 @@
+{
+  "moduleTemplate": {
+    "name": "BP_Treatment_Threshold_CVD_Risk",
+    "sections": {
+      "purpose": {
+        "clinicalProblem": {
+          "clinicalIntent": "Determine BP treatment thresholds based on CVD risk stratification to guide medication initiation",
+          "whenToUse": "Initial hypertension diagnosis, CVD risk assessment, treatment decision point",
+          "decisionOrAction": "BP medication initiation threshold selection based on patient risk profile (clinical CVD, diabetes, CKD, PREVENT risk score)"
+        }
+      },
+      "userFlow": {
+        "navigationPath": [
+          { "view": "BPThresholdStartView", "purpose": "Entry point for BP treatment decision" },
+          { "view": "PatientProfileView", "purpose": "Collect clinical CVD status, diabetes, CKD history" },
+          { "view": "PREVENTRiskView", "purpose": "Calculate or input 10-year CVD risk score" },
+          { "view": "BPMeasurementView", "purpose": "Input average SBP and DBP readings" },
+          { "view": "LifestyleInterventionView", "purpose": "Track 3-6 month lifestyle trial if applicable" },
+          { "view": "RecommendationEngineView", "purpose": "Apply COR/LOE logic to patient data" },
+          { "view": "TreatmentRecommendationView", "purpose": "Display medication initiation recommendation" },
+          { "view": "DocumentationView", "purpose": "Log recommendation to health record" }
+        ]
+      },
+      "inputDataModel": {
+        "structName": "BPTreatmentThresholdInputModel",
+        "requiredFields": {
+          "averageSBP": { "type": "Int?", "validation": "70-250" },
+          "averageDBP": { "type": "Int?", "validation": "40-150" },
+          "hasClinicalCVD": { "type": "Bool?" },
+          "hasDiabetes": { "type": "Bool?" },
+          "hasCKD": { "type": "Bool?" }
+        },
+        "optionalFields": {
+          "preventRiskScore": { "type": "Double?", "validation": "0-100", "description": "10-year CVD risk percentage based on PREVENT" },
+          "lifestyleInterventionDuration": { "type": "Int?", "description": "Months of lifestyle intervention completed", "validation": "0-12" },
+          "lifestyleInterventionCompleted": { "type": "Bool?" }
+        },
+        "validationRules": [
+          "SBP: 70-250 mm Hg",
+          "DBP: 40-150 mm Hg",
+          "PREVENT risk score: 0-100%",
+          "If no clinical CVD, diabetes, or CKD, PREVENT risk score required",
+          "Lifestyle intervention duration valid only if 10-year risk <7.5%"
+        ]
+      },
+      "logicEngine": {
+        "rules": [
+          "Check clinical CVD status first",
+          "If clinical CVD present: use SBP ≥130 or DBP ≥80 thresholds",
+          "If no clinical CVD: check diabetes or CKD status",
+          "If diabetes or CKD present: use SBP ≥130 or DBP ≥80 thresholds",
+          "If no clinical CVD, diabetes, or CKD: use PREVENT 10-year risk score",
+          "If PREVENT risk ≥7.5%: use SBP ≥130 or DBP ≥80 thresholds",
+          "If PREVENT risk <7.5%: use SBP ≥130 or DBP ≥80 ONLY after 3-6 months lifestyle intervention",
+          "Otherwise use SBP ≥140 or DBP ≥90 thresholds for general population",
+          "Apply corresponding COR and LOE based on patient category"
+        ],
+        "thresholdsExample": {
+          "patientCategories": [
+            {
+              "category": "All adults with hypertension (general)",
+              "sbpThreshold": "≥140",
+              "dbpThreshold": "≥90",
+              "cor": "1",
+              "loe": "A",
+              "condition": "No modifiers"
+            },
+            {
+              "category": "Adults with hypertension AND clinical CVD",
+              "sbpThreshold": "≥130",
+              "dbpThreshold": "≥80",
+              "cor": "1",
+              "loe": "A (SBP) / C-LD (DBP)",
+              "condition": "Clinical CVD present"
+            },
+            {
+              "category": "Adults with hypertension AND diabetes or CKD or PREVENT ≥7.5%",
+              "sbpThreshold": "≥130",
+              "dbpThreshold": "≥80",
+              "cor": "1",
+              "loe": "A (SBP) / C-LD (DBP)",
+              "condition": "Diabetes or CKD or 10-year risk ≥7.5%"
+            },
+            {
+              "category": "Adults with hypertension, PREVENT <7.5%, no CVD/diabetes/CKD",
+              "sbpThreshold": "≥130 (after lifestyle trial)",
+              "dbpThreshold": "≥80 (after lifestyle trial)",
+              "cor": "1",
+              "loe": "B-R",
+              "condition": "After 3-6 months lifestyle intervention",
+              "lifestyleRequired": true
+            }
+          ]
+        }
+      },
+      "outputModel": {
+        "structName": "BPTreatmentThresholdOutputModel",
+        "fields": {
+          "category": { "type": "String", "description": "Patient risk category (e.g., 'Clinical CVD', 'High CVD Risk ≥7.5%', 'Low CVD Risk <7.5%')" },
+          "recommendation": { "type": "String", "description": "Full recommendation text" },
+          "sbpThreshold": { "type": "Int", "description": "SBP threshold for medication initiation" },
+          "dbpThreshold": { "type": "Int", "description": "DBP threshold for medication initiation" },
+          "cor": { "type": "String", "description": "Class of Recommendation (1, 2a, 2b, 3)" },
+          "loe": { "type": "String", "description": "Level of Evidence (A, B-R, B-NR, C-LD, C-EO)" },
+          "requiresLifestyleIntervention": { "type": "Bool", "description": "True if 3-6 month lifestyle trial needed first" },
+          "lifestyleInterventionDuration": { "type": "Int?", "description": "Months of lifestyle intervention required", "condition": "if requiresLifestyleIntervention == true" },
+          "preventRiskScoreUsed": { "type": "Bool", "description": "True if PREVENT risk score was applied" }
+        },
+        "constraints": ["deterministic", "renderable", "safe"]
+      },
+      "crisisRules": {
+        "thresholds": {
+          "sbp": "N/A - treatment initiation thresholds are lower than crisis thresholds",
+          "dbp": "N/A"
+        },
+        "symptomsToAsk": [],
+        "escalationLogic": {
+          "ifAnySymptomPresent": "N/A - this module addresses chronic treatment initiation, not acute crisis",
+          "ifNoSymptoms": "N/A"
+        },
+        "appDisplay": {
+          "screenType": "Standard clinical decision support",
+          "button": "N/A",
+          "behavior": "Normal routing with treatment recommendation"
+        }
+      },
+      "nextStepRouting": {
+        "providerSuggestion": "Initiate BP-lowering medication based on recommended threshold",
+        "followUpTiming": "Reassess BP in 4 weeks after medication initiation; recalculate PREVENT risk annually",
+        "repeatMeasurement": "Confirm elevated BP with multiple readings before treatment initiation",
+        "navigatorEscalation": "Flag patients meeting treatment thresholds for care team notification",
+        "documentation": "Log treatment initiation decision, COR/LOE, and PREVENT risk score to health record"
+      },
+      "tags": {
+        "acute": false,
+        "chronic": true,
+        "screening": false,
+        "diagnosis": false,
+        "management": true,
+        "priority": "high",
+        "topic": "hypertension_treatment"
+      }
+    }
+  }
+}

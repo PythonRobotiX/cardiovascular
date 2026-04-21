@@ -1,0 +1,108 @@
+{
+  "moduleTemplate": {
+    "name": "Weight_Management_BP",
+    "sections": {
+      "purpose": {
+        "clinicalProblem": {
+          "clinicalIntent": "Weight loss recommendation for BP management in adults with overweight or obesity",
+          "whenToUse": "Initial evaluation of elevated BP or hypertension in adults with BMI ≥25 (overweight) or BMI ≥30 (obesity)",
+          "decisionOrAction": "Recommend minimum 5% body weight reduction to prevent or treat elevated BP/hypertension"
+        }
+      },
+      "userFlow": {
+        "navigationPath": [
+          { "view": "WeightAssessmentView", "purpose": "Calculate BMI and determine overweight/obesity status" },
+          { "view": "BPMeasurementView", "purpose": "Assess baseline BP (elevated or hypertensive range)" },
+          { "view": "WeightRecommendationView", "purpose": "Display COR 1, LOE A recommendation for weight loss" },
+          { "view": "GoalSettingView", "purpose": "Set 5% body weight reduction goal" },
+          { "view": "StrategySelectionView", "purpose": "Present weight loss strategies (diet, exercise, behavioral)" },
+          { "view": "MonitoringScheduleView", "purpose": "Schedule weight and BP follow-up" },
+          { "view": "ProgressTrackingView", "purpose": "Track weight loss progress toward 5% goal" },
+          { "view": "ReassessmentView", "purpose": "Re-evaluate BP after weight loss achievement" }
+        ]
+      },
+      "inputDataModel": {
+        "structName": "WeightManagementInputModel",
+        "requiredFields": {
+          "currentWeight": { "type": "Double?", "validation": "Valid weight in kg or lbs" },
+          "height": { "type": "Double?", "validation": "Valid height in cm or inches" },
+          "systolicBP": { "type": "Int?", "validation": "70-250" },
+          "diastolicBP": { "type": "Int?", "validation": "40-150" }
+        },
+        "optionalFields": {
+          "bmi": { "type": "Double?", "validation": "Calculated from weight/height" },
+          "weightHistory": { "type": "String?", "options": ["stable", "gaining", "losing"] },
+          "previousWeightLossAttempts": { "type": "Int?" }
+        },
+        "validationRules": [
+          "BMI ≥25 for overweight or ≥30 for obesity required",
+          "BP must be elevated (SBP 120-129 and DBP <80) or hypertensive (≥130/≥80)",
+          "Target reduction = current_weight * 0.05"
+        ]
+      },
+      "logicEngine": {
+        "rules": [
+          "Calculate BMI = weight(kg) / height(m)²",
+          "If BMI ≥25 (overweight) or ≥30 (obesity) AND BP elevated/hypertensive → apply recommendation",
+          "Set weight loss goal = current_weight × 0.05 (minimum)",
+          "Recommend lifestyle interventions (dietary modification, increased physical activity, behavioral counseling)",
+          "Monitor BP response to weight loss at 3-6 month intervals",
+          "If 5% weight loss achieved and BP still elevated → consider additional interventions"
+        ],
+        "thresholdsExample": {
+          "categories": [
+            { "name": "Normal weight", "bmi": "18.5-24.9", "action": "Maintenance focus" },
+            { "name": "Overweight", "bmi": "25-29.9", "action": "Recommend 5% weight loss" },
+            { "name": "Obesity Class 1", "bmi": "30-34.9", "action": "Recommend 5-10% weight loss" },
+            { "name": "Obesity Class 2", "bmi": "35-39.9", "action": "Recommend ≥10% weight loss" },
+            { "name": "Obesity Class 3", "bmi": "≥40", "action": "Recommend ≥15% weight loss + consider pharmacotherapy/surgery" }
+          ]
+        }
+      },
+      "outputModel": {
+        "structName": "WeightManagementOutputModel",
+        "fields": {
+          "category": { "type": "String", "description": "Weight classification and BP status" },
+          "recommendation": { "type": "String", "description": "Weight loss recommended with goal of at least 5% reduction" },
+          "targetWeight": { "type": "Double", "description": "Weight goal after 5% reduction" },
+          "cor": { "type": "String", "description": "1 (STRONG)" },
+          "loe": { "type": "String", "description": "A (High-quality evidence)" },
+          "followUpInterval": { "type": "String", "description": "3-6 months for weight and BP reassessment" }
+        },
+        "constraints": ["deterministic", "renderable", "safe"]
+      },
+      "crisisRules": {
+        "thresholds": {
+          "sbp": "N/A - chronic management recommendation",
+          "dbp": "N/A"
+        },
+        "symptomsToAsk": [],
+        "escalationLogic": {
+          "ifAnySymptomPresent": "N/A",
+          "ifNoSymptoms": "N/A"
+        },
+        "appDisplay": {
+          "screenType": "Standard recommendation display with COR/LOE badge",
+          "button": "Set weight goal button",
+          "behavior": "Normal routing to weight management plan"
+        }
+      },
+      "nextStepRouting": {
+        "providerSuggestion": "Implement weight loss program with dietary and physical activity counseling",
+        "followUpTiming": "Reassess weight and BP at 3 months, then every 3-6 months until goal achieved",
+        "repeatMeasurement": "Monitor weight monthly, BP at each clinical visit",
+        "navigatorEscalation": "If no weight loss after 6 months, escalate to nutritionist or obesity medicine specialist",
+        "documentation": "Log baseline weight, goal weight, BP, and follow-up schedule to health record"
+      },
+      "tags": {
+        "acute": false,
+        "chronic": true,
+        "screening": false,
+        "diagnosis": false,
+        "management": true,
+        "priority": "high",
+        "topic": "hypertension"
+      }
+    }
+  }
+}

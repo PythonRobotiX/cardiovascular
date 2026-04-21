@@ -1,0 +1,213 @@
+{
+  "moduleTemplate": {
+    "name": "Alternative_Antihypertensive_Agents",
+    "sections": {
+      "purpose": {
+        "clinicalProblem": {
+          "clinicalIntent": "Provide detailed prescribing information for alternative antihypertensive agents for resistant cases or specific comorbidities.",
+          "whenToUse": "When first-line agents (ACEi, ARB, CCB, thiazide diuretics) are inadequate, not tolerated, or contraindicated; or in specific conditions like HF, CKD, or primary aldosteronism.",
+          "decisionOrAction": "Select appropriate second/third-line agent based on drug class, patient comorbidities, renal function, and potential adverse effects."
+        }
+      },
+      "userFlow": {
+        "navigationPath": [
+          { "view": "AlternativeBPStartView", "purpose": "Entry point for alternative agent selection" },
+          { "view": "DrugClassSelectionView", "purpose": "Select drug class (e.g., Beta Blocker, Loop Diuretic)" },
+          { "view": "DrugListView", "purpose": "Display list of drugs within selected class" },
+          { "view": "DrugDetailView", "purpose": "Show dose range, frequency, and key comments for selected drug" },
+          { "view": "SpecialPopulationAlertView", "purpose": "Display warnings for HFrEF, CKD, pregnancy, etc." },
+          { "view": "DrugInteractionView", "purpose": "Highlight major interactions (e.g., CYP3A4, K+ supplements)" },
+          { "view": "PrescribingDecisionView", "purpose": "Confirm agent selection and generate prescription details" },
+          { "view": "MonitoringScheduleView", "purpose": "Set monitoring for adverse effects (e.g., lupus, pericardial effusion)" }
+        ]
+      },
+      "inputDataModel": {
+        "structName": "AlternativeAgentInputModel",
+        "requiredFields": {
+          "drugClass": { "type": "String?", "validation": "Must be a valid class from the list" },
+          "comorbidities": { "type": "[String]?", "validation": "e.g., HFrEF, CKD, bronchospastic disease" }
+        },
+        "optionalFields": {
+          "renalFunction": { "type": "String?", "options": ["normal", "CKD Stage 3", "CKD Stage 4+", "ESRD"] },
+          "pregnancyStatus": { "type": "Bool?" },
+          "currentMeds": { "type": "[String]?", "description": "To check for interactions" }
+        },
+        "validationRules": [
+          "Check GFR before potassium-sparing diuretics or aliskiren",
+          "Verify no concurrent ACEi/ARB with aliskiren",
+          "Confirm no beta blocker with nondihydropyridine CCB"
+        ]
+      },
+      "logicEngine": {
+        "rules": [
+          "If HFrEF present, prioritize carvedilol, bisoprolol, or metoprolol succinate",
+          "If CKD Stage 4+ (GFR <30), avoid potassium-sparing diuretics and use loop diuretics instead of thiazides",
+          "If bronchospastic airway disease, use cardioselective beta blockers (e.g., atenolol, metoprolol)",
+          "If resistant hypertension, consider spironolactone or eplerenone as fourth agent",
+          "If primary aldosteronism, use eplerenone or spironolactone",
+          "Avoid abrupt clonidine withdrawal → triggers hypertensive crisis",
+          "Hydralazine requires concomitant diuretic and beta blocker"
+        ],
+        "thresholdsExample": {
+          "categories": [
+            { "name": "HFrEF Preferred", "drugs": ["Carvedilol", "Bisoprolol", "Metoprolol succinate", "Torsemide"] },
+            { "name": "CKD (GFR <30)", "preferred_diuretic": "Loop diuretics (bumetanide, furosemide, torsemide)" },
+            { "name": "Avoid in CKD (GFR <45)", "drugs": ["Amiloride", "Triamterene", "Spironolactone", "Eplerenone"] },
+            { "name": "Contraindicated in HFrEF", "drugs": ["Diltiazem", "Verapamil"] },
+            { "name": "Avoid in Pregnancy", "drugs": ["Aliskiren", "Eplerenone"] }
+          ]
+        }
+      },
+      "outputModel": {
+        "structName": "AlternativeAgentOutputModel",
+        "fields": {
+          "category": { "type": "String", "description": "e.g., 'Beta Blocker - Cardioselective'" },
+          "drugName": { "type": "String", "description": "e.g., 'Carvedilol'" },
+          "doseRangeMgPerDay": { "type": "String", "description": "e.g., '12.5-50'" },
+          "dailyFrequency": { "type": "String", "description": "e.g., '2'" },
+          "comments": { "type": "String", "description": "Key warnings and indications" },
+          "requiresMonitoring": { "type": "[String]", "description": "e.g., ['Serum potassium', 'Blood pressure', 'Heart rate']" }
+        },
+        "constraints": ["deterministic", "renderable", "safe"]
+      },
+      "crisisRules": {
+        "thresholds": {
+          "sbp": "N/A",
+          "dbp": "N/A"
+        },
+        "symptomsToAsk": [],
+        "escalationLogic": {
+          "ifAnySymptomPresent": "N/A - prescribing module only",
+          "ifNoSymptoms": "N/A"
+        },
+        "appDisplay": {
+          "screenType": "Standard prescribing information",
+          "button": "Add to prescription",
+          "behavior": "Normal routing with safety alerts"
+        }
+      },
+      "nextStepRouting": {
+        "providerSuggestion": "Initiate at lowest dose and titrate based on BP response and tolerability",
+        "followUpTiming": "Recheck BP and labs (K+, creatinine) in 2-4 weeks",
+        "repeatMeasurement": "Monitor BP at each visit to assess efficacy",
+        "navigatorEscalation": "Flag high-risk combos (e.g., beta blocker + nondihydropyridine CCB)",
+        "documentation": "Log selected agent, dose, frequency, and indication to health record"
+      },
+      "tags": {
+        "acute": false,
+        "chronic": true,
+        "screening": false,
+        "diagnosis": false,
+        "management": true,
+        "priority": "medium",
+        "topic": "hypertension_alternative_agents"
+      }
+    }
+  },
+  "drugData": {
+    "classes": [
+      {
+        "className": "CCB—nondihydropyridines",
+        "drugs": [
+          { "name": "Diltiazem ER", "doseRange": "120-360", "frequency": 1, "comments": "Avoid routine use with beta blockers because of increased risk of bradycardia and heart block. Do not use in patients with HFrEF. There are drug interactions with diltiazem and verapamil (CYP3A4 major substrate and moderate inhibitor)." },
+          { "name": "Verapamil IR", "doseRange": "120-360", "frequency": 3, "comments": "(same as above)" },
+          { "name": "Verapamil SR", "doseRange": "120-360", "frequency": "1 or 2", "comments": "(same as above)" },
+          { "name": "Verapamil-delayed onset ER", "doseRange": "100-300", "frequency": "1 (in the evening)", "comments": "(same as above)" }
+        ]
+      },
+      {
+        "className": "Diuretics—loop",
+        "drugs": [
+          { "name": "Bumetanide", "doseRange": "0.5-2", "frequency": 2, "comments": "These are preferred diuretics in patients with symptomatic HF. They are preferred over thiazide-type diuretics in patients with moderate-to-severe CKD (eg, GFR <30 mL/min). The longer-acting choice of torsemide is preferred for treatment of hypertension. A loop diuretic is an option for patients who develop thiazide-type diuretic associated hyponatremia." },
+          { "name": "Furosemide", "doseRange": "20-80", "frequency": 2, "comments": "(same as above)" },
+          { "name": "Torsemide", "doseRange": "5-10", "frequency": 1, "comments": "(same as above)" }
+        ]
+      },
+      {
+        "className": "Diuretics—potassium-sparing",
+        "drugs": [
+          { "name": "Amiloride", "doseRange": "5-10", "frequency": "1 or 2", "comments": "As monotherapy, these agents are minimally effective antihypertensive agents. Combination therapy of a potassium-sparing diuretic with a thiazide-type diuretic can be considered in patients with hypokalemia on thiazide-type diuretic monotherapy. Avoid use in patients with significant CKD (eg, GFR <45 mL/min)." },
+          { "name": "Triamterene", "doseRange": "50-100", "frequency": "1 or 2", "comments": "(same as above)" },
+          { "name": "Eplerenone", "doseRange": "50-100", "frequency": "1 or 2", "comments": "These are preferred agents in primary aldosteronism and resistant hypertension. Spironolactone is associated with greater risk of gynecomastia and impotence compared with eplerenone. Demonstrated efficacy as fourth-agent add-on therapy for resistant hypertension. Avoid use with K+ supplements, other K+-sparing diuretics, or significant renal dysfunction (eg, GFR <45 mL/min). Eplerenone often requires twice-daily dosing for adequate BP lowering. Avoid use in pregnancy." },
+          { "name": "Spironolactone", "doseRange": "25-100", "frequency": "1 or 2", "comments": "(same as eplerenone comments)" }
+        ]
+      },
+      {
+        "className": "Beta blockers—cardioselective",
+        "drugs": [
+          { "name": "Atenolol", "doseRange": "25-100", "frequency": 1, "comments": "Beta blockers are not recommended as first-line agents unless the patient has CHD or HF. These are preferred in patients with bronchospastic airway disease requiring a beta blocker. Bisoprolol and metoprolol succinate are preferred in patients with HFrEF. Avoid abrupt cessation." },
+          { "name": "Betaxolol", "doseRange": "5-20", "frequency": 1, "comments": "(same as above)" },
+          { "name": "Bisoprolol", "doseRange": "2.5-10", "frequency": 1, "comments": "(same as above)" },
+          { "name": "Metoprolol succinate (extended release)", "doseRange": "50-200", "frequency": 1, "comments": "(same as above)" },
+          { "name": "Metoprolol tartrate", "doseRange": "100-200", "frequency": 2, "comments": "(same as above)" }
+        ]
+      },
+      {
+        "className": "Beta blockers—cardioselective (continued)",
+        "drugs": [
+          { "name": "Nebivolol", "doseRange": "5-40", "frequency": 1, "comments": "Nebivolol induces nitric oxide-induced vasodilation. Avoid abrupt cessation." }
+        ]
+      },
+      {
+        "className": "Beta blockers—noncardioselective",
+        "drugs": [
+          { "name": "Nadolol", "doseRange": "40-120", "frequency": 1, "comments": "Avoid use in patients with reactive airways disease. Avoid abrupt cessation." },
+          { "name": "Propranolol IR", "doseRange": "80-160", "frequency": 2, "comments": "(same as above)" },
+          { "name": "Propranolol LA", "doseRange": "80-160", "frequency": 1, "comments": "(same as above)" }
+        ]
+      },
+      {
+        "className": "Beta blockers—intrinsic sympathomimetic activity",
+        "drugs": [
+          { "name": "Acebutolol", "doseRange": "200-800", "frequency": 2, "comments": "Generally avoid, especially in patients with CHD or HF. Avoid abrupt cessation." },
+          { "name": "Penbutolol", "doseRange": "10-40", "frequency": 1, "comments": "(same as above)" },
+          { "name": "Pindolol", "doseRange": "10-60", "frequency": 2, "comments": "(same as above)" }
+        ]
+      },
+      {
+        "className": "Combined alpha and beta blockers",
+        "drugs": [
+          { "name": "Carvedilol", "doseRange": "12.5-50", "frequency": 2, "comments": "Use of carvedilol is preferred in patients with HFrEF. Avoid abrupt cessation." },
+          { "name": "Carvedilol phosphate", "doseRange": "20-80", "frequency": 1, "comments": "(same as above)" },
+          { "name": "Labetalol", "doseRange": "200-1200", "frequency": 2, "comments": "(same as above)" }
+        ]
+      },
+      {
+        "className": "Direct renin inhibitor",
+        "drugs": [
+          { "name": "Aliskiren", "doseRange": "150-300", "frequency": 1, "comments": "Do not use in combination with ACEi or ARB. Aliskiren is very long acting. There is an increased risk of hyperkalemia in CKD or in those on K+ supplements or K+-sparing drugs. Aliskiren may cause acute renal failure in patients with severe bilateral renal artery stenosis. Avoid use in pregnancy." }
+        ]
+      },
+      {
+        "className": "Alpha-1 blockers",
+        "drugs": [
+          { "name": "Doxazosin", "doseRange": "1-16", "frequency": 1, "comments": "These are associated with orthostatic hypotension, especially in older adults with a greater BP drop with first dose effect. These may be considered a second-line agent in patients with symptomatic benign prostatic hypertrophy." },
+          { "name": "Prazosin", "doseRange": "2-20", "frequency": "2 or 3", "comments": "(same as above)" },
+          { "name": "Terazosin", "doseRange": "1-20", "frequency": "1 or 2", "comments": "(same as above)" }
+        ]
+      },
+      {
+        "className": "Central alpha-2-agonist and other centrally acting drugs",
+        "drugs": [
+          { "name": "Clonidine oral", "doseRange": "0.1-0.8", "frequency": 2, "comments": "These are generally reserved as last-line choices because of significant CNS adverse effects, especially in older adults. Avoid abrupt discontinuation of clonidine, which may induce hypertensive crisis. Clonidine must be tapered to avoid rebound hypertension." },
+          { "name": "Clonidine patch", "doseRange": "0.1-0.3", "frequency": "1 weekly", "comments": "(same as above)" },
+          { "name": "Methyldopa", "doseRange": "250-1000", "frequency": 2, "comments": "(same as above)" },
+          { "name": "Guanfacine", "doseRange": "0.5-2", "frequency": 1, "comments": "(same as above)" }
+        ]
+      },
+      {
+        "className": "Direct vasodilators",
+        "drugs": [
+          { "name": "Hydralazine", "doseRange": "100-200", "frequency": "2 or 3", "comments": "These are associated with sodium and water retention and reflex tachycardia and should be used with a diuretic and beta blocker. Hydralazine is associated with a drug-induced lupus-like syndrome at higher doses. Minoxidil is associated with hirsutism and requires a loop diuretic. Minoxidil can induce pericardial effusion." },
+          { "name": "Minoxidil", "doseRange": "5-40", "frequency": "1 or 2", "comments": "(same as above)" }
+        ]
+      },
+      {
+        "className": "Dual endothelin receptor antagonist",
+        "drugs": [
+          { "name": "Aprocitentan", "doseRange": "12.5", "frequency": 1, "comments": "Associated with mild-to-moderate fluid retention usually occurring within the first 4-6 wks of therapy. Indicated as add-on therapy for patients whose BP is not adequately controlled on other antihypertensive medications." }
+        ]
+      }
+    ]
+  }
+}

@@ -1,0 +1,128 @@
+{
+  "moduleTemplate": {
+    "name": "ICH_Blood_Pressure_Management",
+    "sections": {
+      "purpose": {
+        "clinicalProblem": {
+          "clinicalIntent": "Guide acute blood pressure lowering in spontaneous intracerebral hemorrhage to improve functional outcomes and reduce adverse events",
+          "whenToUse": "Adult patients with acute spontaneous ICH, at presentation and during first 7 days",
+          "decisionOrAction": "BP target selection (130-140 mm Hg) + titration strategy + safety threshold"
+        }
+      },
+      "userFlow": {
+        "navigationPath": [
+          { "view": "ICHBPPresentationView", "purpose": "Capture admission SBP and ICH diagnosis confirmation" },
+          { "view": "BPThresholdRouterView", "purpose": "Route based on SBP: 150-220, >220, or other categories" },
+          { "view": "BPTargetSelectionView", "purpose": "Display appropriate COR/LOE and recommendation" },
+          { "view": "MedicationAdministrationView", "purpose": "Guide BP medication titration and monitoring" },
+          { "view": "SBPVariabilityView", "purpose": "Monitor for peaks and large variability in SBP" },
+          { "view": "TreatmentStopView", "purpose": "Check if SBP <130 mm Hg to stop antihypertensives" },
+          { "view": "SevenDayMonitoringView", "purpose": "Continue monitoring for at least 7 days post-ICH" },
+          { "view": "OutcomeFollowUpView", "purpose": "Assess functional outcome at follow-up" }
+        ]
+      },
+      "inputDataModel": {
+        "structName": "ICHInputModel",
+        "requiredFields": {
+          "systolicBP": { "type": "Int?", "validation": "Measure at presentation" },
+          "ichDiagnosis": { "type": "Bool?", "validation": "Must be confirmed spontaneous ICH" }
+        },
+        "optionalFields": {
+          "sbpVariability": { "type": "Float?", "options": ["peak values", "mean arterial pressure"] },
+          "medicationList": { "type": "[String]?", "options": ["antihypertensive agents"] },
+          "daysPostICH": { "type": "Int?", "validation": "1-7 days" }
+        },
+        "validationRules": [
+          "SBP must be measured accurately",
+          "Exclude secondary causes of ICH",
+          "Confirm spontaneous ICH before applying recommendations"
+        ]
+      },
+      "logicEngine": {
+        "rules": [
+          "If SBP 150-220 mm Hg → apply COR 2a LOE A: lower SBP to 130-140 mm Hg for ≥7 days",
+          "If SBP 150-220 mm Hg and SBP drops <130 mm Hg → stop antihypertensive medications",
+          "If acute BP lowering required → apply COR 2a LOE B-NR: ensure smooth, nonlabile, sustained control avoiding peaks and large variability",
+          "If SBP >220 mm Hg → apply COR 3 Harm LOE B-NR: do not lower SBP below 130 mm Hg",
+          "Monitor functional outcomes (mRS, Barthel Index) at follow-up"
+        ],
+        "thresholdsExample": {
+          "categories": [
+            { 
+              "name": "Moderate SBP Elevation", 
+              "sbp_range": "150-220", 
+              "cor": "2a", 
+              "loe": "A",
+              "action": "Lower SBP to 130-140 mm Hg for ≥7 days",
+              "stop_condition": "If SBP <130 mm Hg, stop antihypertensives"
+            },
+            { 
+              "name": "BP Lowering Strategy", 
+              "sbp_range": "Any requiring acute lowering", 
+              "cor": "2a", 
+              "loe": "B-NR",
+              "action": "Smooth, nonlabile, sustained control, avoid peaks and large SBP variability"
+            },
+            { 
+              "name": "Severe SBP Elevation", 
+              "sbp_range": ">220", 
+              "cor": "3: Harm", 
+              "loe": "B-NR",
+              "action": "Do not lower SBP below 130 mm Hg",
+              "warning": "Reducing below 130 mm Hg increases adverse events"
+            }
+          ]
+        }
+      },
+      "outputModel": {
+        "structName": "ICHOutputModel",
+        "fields": {
+          "category": { "type": "String", "description": "e.g., 'Moderate SBP Elevation (150-220)'" },
+          "cor": { "type": "String", "values": ["2a", "2a", "3: Harm"] },
+          "loe": { "type": "String", "values": ["A", "B-NR", "B-NR"] },
+          "recommendation": { "type": "String", "description": "Full text recommendation" },
+          "bpTarget": { "type": "String", "description": "e.g., 'SBP 130-140 mm Hg' or 'Do not lower below 130 mm Hg'" },
+          "action": { "type": "String", "description": "Clinical action to take" },
+          "stopCondition": { "type": "String?", "condition": "If SBP <130 mm Hg" }
+        },
+        "constraints": ["deterministic", "renderable", "safe"]
+      },
+      "crisisRules": {
+        "thresholds": {
+          "sbp": ">220 mm Hg",
+          "dbp": "N/A"
+        },
+        "symptomsToAsk": [
+          "Neurological deterioration",
+          "Signs of increased intracranial pressure",
+          "Hematoma expansion on imaging"
+        ],
+        "escalationLogic": {
+          "ifAnySymptomPresent": "Emergency neurosurgery consultation, consider intensive care admission",
+          "ifNoSymptoms": "Continue intensive BP monitoring, avoid lowering below 130 mm Hg"
+        },
+        "appDisplay": {
+          "screenType": "High severity alert with harm recommendation",
+          "button": "Alert: Do not lower SBP below 130 mm Hg",
+          "behavior": "Flag adverse event risk, escalate to ICU protocol"
+        }
+      },
+      "nextStepRouting": {
+        "providerSuggestion": "Follow AHA/ASA guidelines for ICH management, neurology consultation",
+        "followUpTiming": "Monitor for at least 7 days post-ICH, assess functional outcomes at 30, 90 days",
+        "repeatMeasurement": "Check SBP every 15-30 minutes during acute lowering, then hourly",
+        "navigatorEscalation": "If SBP >220 mm Hg or <130 mm Hg with medications → alert attending physician",
+        "documentation": "Record BP targets achieved, medication doses, SBP variability metrics, functional outcome scores"
+      },
+      "tags": {
+        "acute": true,
+        "chronic": false,
+        "screening": false,
+        "diagnosis": false,
+        "management": true,
+        "priority": "high",
+        "topic": "intracerebral_hemorrhage"
+      }
+    }
+  }
+}

@@ -1,0 +1,118 @@
+{
+  "moduleTemplate": {
+    "name": "Resistant_Hypertension_Renal_Denervation",
+    "sections": {
+      "purpose": {
+        "clinicalProblem": {
+          "clinicalIntent": "Identify and manage resistant hypertension, including medication optimization and renal denervation candidacy",
+          "whenToUse": "Evaluation of patients with uncontrolled BP on ≥4 antihypertensives, or stage 2 hypertension not at goal despite optimal therapy",
+          "decisionOrAction": "Secondary cause evaluation → medication optimization (MRA) → alternative agents → RDN candidacy assessment"
+        }
+      },
+      "userFlow": {
+        "navigationPath": [
+          { "view": "RHEntryView", "purpose": "Screen for resistant hypertension criteria" },
+          { "view": "SecondaryCauseEvaluationView", "purpose": "Review medications, check for interfering agents, evaluate for secondary causes" },
+          { "view": "ContraindicationCheckView", "purpose": "Screen for contraindications (neurogenic orthostatic hypotension, pregnancy, FMD, stented renal artery, renal artery aneurysm, significant renal artery stenosis, known kidney or secreting adrenal tumors)" },
+          { "view": "MedicationOptimizationView", "purpose": "Verify first-line therapy (ACEi/ARB + CCB + thiazide-like diuretic), check eGFR" },
+          { "view": "MRAAdditionView", "purpose": "If eGFR ≥45, add MRA (COR 1, LOE B-R)" },
+          { "view": "AlternativeAgentView", "purpose": "If MRA intolerant/contraindicated, offer amiloride, BBs, alpha-blockers, central sympatholytics, dual endothelin receptor antagonists, or direct vasodilators (COR 2a, LOE B-NR)" },
+          { "view": "RDNMultidisciplinaryView", "purpose": "Multidisciplinary team evaluation for RDN candidacy (COR 1, LOE B-NR)" },
+          { "view": "RDNSharedDecisionView", "purpose": "Discuss BP lowering benefits vs procedural risks (COR 1, LOE C-EO)" },
+          { "view": "RDNProcedureView", "purpose": "Proceed with RDN as adjunct treatment if criteria met (COR 2b, LOE B-R)" }
+        ]
+      },
+      "inputDataModel": {
+        "structName": "ResistantHypertensionInputModel",
+        "requiredFields": {
+          "officeSBP": { "type": "Int?", "validation": "70-250" },
+          "officeDBP": { "type": "Int?", "validation": "40-150" },
+          "antihypertensiveCount": { "type": "Int?", "validation": "≥4 for resistant hypertension" },
+          "currentMeds": { "type": "[String]", "validation": "Must include ACEi/ARB + CCB + thiazide-like diuretic" },
+          "eGFR": { "type": "Int?", "validation": "For MRA: ≥45, For RDN: ≥40" }
+        },
+        "optionalFields": {
+          "onMRA": { "type": "Bool?" },
+          "mraIntolerant": { "type": "Bool?" },
+          "mraContraindicated": { "type": "Bool?" },
+          "contraindications": { "type": "[String]", "options": ["neurogenic orthostatic hypotension", "pregnancy", "fibromuscular dysplasia", "stented renal artery", "renal artery aneurysm", "significant renal artery stenosis", "known kidney tumor", "secreting adrenal tumor"] }
+        },
+        "validationRules": [
+          "Resistant hypertension: office SBP ≥140 and DBP ≥90 on ≥4 meds including ACEi/ARB + CCB + thiazide-like diuretic",
+          "Stage 2 hypertension not at goal: SBP ≥140 and DBP ≥90 on optimal or near-optimal therapy",
+          "eGFR ≥45 for MRA addition",
+          "eGFR ≥40 for RDN consideration",
+          "RDN office SBP 140-180 and DBP ≥90"
+        ]
+      },
+      "logicEngine": {
+        "rules": [
+          "Step 1: Identify resistant hypertension (office SBP ≥140 and DBP ≥90 despite ≥4 antihypertensives including ACEi/ARB + CCB + thiazide-like diuretic)",
+          "Step 2: Evaluate for secondary causes, review all medications, remove interfering agents (COR 1, LOE B-NR)",
+          "Step 3: Screen contraindications before proceeding",
+          "Step 4: If eGFR ≥45 and uncontrolled despite optimal first-line therapy, add MRA (COR 1, LOE B-R)",
+          "Step 5: If MRA intolerant/contraindicated, add alternative agent (amiloride, BBs, alpha-blockers, central sympatholytics, dual endothelin receptor antagonists, direct vasodilators) (COR 2a, LOE B-NR)",
+          "Step 6: For persistent uncontrolled hypertension or intolerable side effects, evaluate for RDN with multidisciplinary team (COR 1, LOE B-NR)",
+          "Step 7: Shared decision-making discussing BP benefits vs procedural risks (COR 1, LOE C-EO)",
+          "Step 8: If selected, RDN as adjunct treatment (COR 2b, LOE B-R)"
+        ],
+        "thresholdsExample": {
+          "categories": [
+            { "name": "Resistant Hypertension Criteria", "sbp": "≥140", "dbp": "≥90", "meds": "≥4 including ACEi/ARB + CCB + thiazide-like diuretic" },
+            { "name": "MRA Addition", "sbp": "uncontrolled", "dbp": "uncontrolled", "eGFR": "≥45", "cor": "1", "loe": "B-R" },
+            { "name": "Alternative Agents", "sbp": "uncontrolled", "dbp": "uncontrolled", "condition": "MRA intolerant/contraindicated", "cor": "2a", "loe": "B-NR" },
+            { "name": "RDN Candidacy", "sbp": "140-180", "dbp": "≥90", "eGFR": "≥40", "condition": "resistant or intolerant to additional meds", "cor": "2b", "loe": "B-R" }
+          ]
+        }
+      },
+      "outputModel": {
+        "structName": "ResistantHypertensionOutputModel",
+        "fields": {
+          "category": { "type": "String", "description": "e.g., 'Resistant Hypertension - MRA Candidate'" },
+          "isResistantHypertension": { "type": "Bool" },
+          "secondaryEvaluationRecommended": { "type": "Bool", "description": "COR 1 recommendation" },
+          "mraRecommended": { "type": "Bool", "condition": "if eGFR ≥45 and uncontrolled" },
+          "alternativeAgentRecommended": { "type": "Bool", "condition": "if MRA intolerant/contraindicated" },
+          "rdnCandidate": { "type": "Bool", "condition": "if resistant or intolerant to additional meds" },
+          "rdnCorLoe": { "type": "String", "description": "COR 2b, LOE B-R" },
+          "multidisciplinaryTeamRequired": { "type": "Bool", "description": "COR 1, LOE B-NR" },
+          "sharedDecisionRequired": { "type": "Bool", "description": "COR 1, LOE C-EO" },
+          "contraindicationsPresent": { "type": "[String]" }
+        },
+        "constraints": ["deterministic", "renderable", "safe"]
+      },
+      "crisisRules": {
+        "thresholds": {
+          "sbp": "N/A - resistant hypertension is chronic management, not acute crisis",
+          "dbp": "N/A"
+        },
+        "symptomsToAsk": [],
+        "escalationLogic": {
+          "ifAnySymptomPresent": "N/A",
+          "ifNoSymptoms": "N/A"
+        },
+        "appDisplay": {
+          "screenType": "Standard clinical decision support",
+          "button": "N/A",
+          "behavior": "Normal routing through medication optimization and RDN evaluation"
+        }
+      },
+      "nextStepRouting": {
+        "providerSuggestion": "Refer to multidisciplinary team with expertise in resistant hypertension and RDN for evaluation",
+        "followUpTiming": "Monitor BP after each medication adjustment; reassess for RDN if BP remains uncontrolled after optimal medical therapy",
+        "repeatMeasurement": "Confirm office BP measurements; consider ambulatory BP monitoring",
+        "navigatorEscalation": "Flag patients with resistant hypertension for care team review; coordinate multidisciplinary evaluation",
+        "documentation": "Log medication optimization steps, MRA trial outcomes, contraindications, shared decision-making discussion, RDN evaluation results"
+      },
+      "tags": {
+        "acute": false,
+        "chronic": true,
+        "screening": true,
+        "diagnosis": true,
+        "management": true,
+        "priority": "high",
+        "topic": "resistant_hypertension_renal_denervation"
+      }
+    }
+  }
+}

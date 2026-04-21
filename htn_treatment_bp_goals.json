@@ -1,0 +1,142 @@
+{
+  "moduleTemplate": {
+    "name": "Hypertension_BP_Goals",
+    "sections": {
+      "purpose": {
+        "clinicalProblem": {
+          "clinicalIntent": "Provide evidence-based SBP and DBP goal recommendations for hypertension patients based on CVD risk stratification",
+          "whenToUse": "Initial hypertension diagnosis, treatment target setting, medication titration, follow-up assessment",
+          "decisionOrAction": "Assign SBP goal (<130 mm Hg with encouragement for <120 mm Hg) and DBP goal (<80 mm Hg) based on increased CVD risk status"
+        }
+      },
+      "userFlow": {
+        "navigationPath": [
+          { "view": "BPGoalStartView", "purpose": "Entry point for BP goal recommendation" },
+          { "view": "CVDRiskAssessmentView", "purpose": "Calculate 10-year predicted CVD risk using PREVENT" },
+          { "view": "RiskStratificationView", "purpose": "Determine if patient is at increased risk (≥7.5%) or not" },
+          { "view": "SBPGoalRecommendationView", "purpose": "Display SBP goal based on risk stratification" },
+          { "view": "DBPGoalRecommendationView", "purpose": "Display DBP goal based on risk stratification" },
+          { "view": "COR_LOE_DisplayView", "purpose": "Show Class of Recommendation and Level of Evidence" },
+          { "view": "GoalSummaryView", "purpose": "Consolidated BP target display" },
+          { "view": "ActionPlanView", "purpose": "Next steps for achieving BP goals" }
+        ]
+      },
+      "inputDataModel": {
+        "structName": "HypertensionBPGoalsInputModel",
+        "requiredFields": {
+          "confirmedHypertension": { "type": "Bool?", "validation": "Must be true for recommendation application" },
+          "cvdRiskPercent": { "type": "Double?", "validation": "0-100, calculated via PREVENT" }
+        },
+        "optionalFields": {
+          "baselineSBP": { "type": "Int?", "validation": "Current SBP in mm Hg" },
+          "baselineDBP": { "type": "Int?", "validation": "Current DBP in mm Hg" },
+          "onAntihypertensives": { "type": "Bool?" }
+        },
+        "validationRules": [
+          "confirmedHypertension must be true",
+          "cvdRiskPercent must be between 0-100",
+          "cvdRiskPercent ≥7.5% defines increased risk group",
+          "PREVENT calculator must be used for risk estimation"
+        ]
+      },
+      "logicEngine": {
+        "rules": [
+          "Step 1: Determine if patient has confirmed hypertension",
+          "Step 2: Calculate 10-year predicted CVD risk using PREVENT",
+          "Step 3: Classify risk: Increased risk if ≥7.5%, otherwise not increased risk",
+          "Step 4: Apply SBP goal based on risk classification and COR/LOE",
+          "Step 5: Apply DBP goal based on risk classification and COR/LOE",
+          "Step 6: For increased risk patients: SBP goal <130 mm Hg with encouragement for <120 mm Hg (COR 1, LOE A)",
+          "Step 7: For NOT increased risk patients: SBP goal <130 mm Hg with encouragement for <120 mm Hg (COR 2b, LOE B-NR)",
+          "Step 8: For increased risk patients: DBP target <80 mm Hg (COR 1, LOE B-R)",
+          "Step 9: For NOT increased risk patients: DBP target <80 mm Hg (COR 2b, LOE B-NR)"
+        ],
+        "thresholdsExample": {
+          "sbpGoals": [
+            { 
+              "riskGroup": "Increased risk (≥7.5%)", 
+              "goal": "<130 mm Hg with encouragement for <120 mm Hg", 
+              "cor": "Class 1", 
+              "loe": "A", 
+              "strength": "STRONG",
+              "clinicalIntent": "Reduce risk of cardiovascular events and total mortality"
+            },
+            { 
+              "riskGroup": "Not increased risk (<7.5%)", 
+              "goal": "<130 mm Hg with encouragement for <120 mm Hg", 
+              "cor": "Class 2b", 
+              "loe": "B-NR", 
+              "strength": "WEAK",
+              "clinicalIntent": "Reduce risk of further elevation of BP"
+            }
+          ],
+          "dbpGoals": [
+            { 
+              "riskGroup": "Increased risk (≥7.5%)", 
+              "target": "<80 mm Hg", 
+              "cor": "Class 1", 
+              "loe": "B-R", 
+              "strength": "STRONG",
+              "clinicalIntent": "Reduce risk of cardiovascular events and total mortality"
+            },
+            { 
+              "riskGroup": "Not increased risk (<7.5%)", 
+              "target": "<80 mm Hg", 
+              "cor": "Class 2b", 
+              "loe": "B-NR", 
+              "strength": "WEAK",
+              "clinicalIntent": "Reduce risk of cardiovascular events"
+            }
+          ]
+        }
+      },
+      "outputModel": {
+        "structName": "HypertensionBPGoalsOutputModel",
+        "fields": {
+          "category": { "type": "String", "description": "e.g., 'Hypertension BP Goals - Increased Risk'" },
+          "sbpGoal": { "type": "String", "description": "e.g., '<130 mm Hg (encourage <120 mm Hg)'" },
+          "sbpCOR": { "type": "String", "description": "e.g., 'Class 1'" },
+          "sbpLOE": { "type": "String", "description": "e.g., 'A'" },
+          "dbpTarget": { "type": "String", "description": "e.g., '<80 mm Hg'" },
+          "dbpCOR": { "type": "String", "description": "e.g., 'Class 1'" },
+          "dbpLOE": { "type": "String", "description": "e.g., 'B-R'" },
+          "riskGroup": { "type": "String", "values": ["Increased risk (≥7.5%)", "Not increased risk (<7.5%)"] },
+          "recommendedNextStep": { "type": "String", "description": "Action plan based on goals" }
+        },
+        "constraints": ["deterministic", "renderable", "safe"]
+      },
+      "crisisRules": {
+        "thresholds": {
+          "sbp": "Not applicable for BP goals (see Hypertension module for crisis)",
+          "dbp": "Not applicable for BP goals (see Hypertension module for crisis)"
+        },
+        "symptomsToAsk": [],
+        "escalationLogic": {
+          "ifAnySymptomPresent": "N/A",
+          "ifNoSymptoms": "N/A"
+        },
+        "appDisplay": {
+          "screenType": "Standard goal display",
+          "button": "N/A",
+          "behavior": "Normal routing to treatment plan"
+        }
+      },
+      "nextStepRouting": {
+        "providerSuggestion": "Initiate or intensify antihypertensive therapy to achieve SBP goal of <130 mm Hg (encourage <120 mm Hg) and DBP <80 mm Hg",
+        "followUpTiming": "Reassess BP in 1-3 months; recalculate CVD risk annually or with clinical status change",
+        "repeatMeasurement": "Confirm BP goal attainment with standardized office and/or home BP monitoring",
+        "navigatorEscalation": "Flag patients not achieving goals despite maximally tolerated therapy for medication review",
+        "documentation": "Log BP goals, risk group, COR/LOE assignment, and attainment status to health record"
+      },
+      "tags": {
+        "acute": false,
+        "chronic": true,
+        "screening": false,
+        "diagnosis": false,
+        "management": true,
+        "priority": "high",
+        "topic": "hypertension_goals"
+      }
+    }
+  }
+}

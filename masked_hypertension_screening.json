@@ -1,0 +1,116 @@
+{
+  "moduleTemplate": {
+    "name": "Masked_Hypertension_Screening",
+    "sections": {
+      "purpose": {
+        "clinicalProblem": {
+          "clinicalIntent": "Identify masked hypertension in adults with normal office BP readings",
+          "whenToUse": "Adults with untreated office SBP <130 mm Hg and DBP <80 mm Hg",
+          "decisionOrAction": "Exclude masked hypertension using out-of-office BP monitoring"
+        }
+      },
+      "userFlow": {
+        "navigationPath": [
+          { "view": "MHScreeningStartView", "purpose": "Entry point for masked hypertension screening" },
+          { "view": "OfficeBPInputView", "purpose": "Input office SBP and DBP readings" },
+          { "view": "EligibilityCheckView", "purpose": "Verify SBP <130 and DBP <80, untreated status" },
+          { "view": "COR_LOE_DisplayView", "purpose": "Show COR 2b | LOE B-NR with rationale" },
+          { "view": "RecommendationView", "purpose": "Display clinical recommendation text" },
+          { "view": "OutOfOfficeBPSelectionView", "purpose": "Select out-of-office monitoring method (ABPM/HBPM)" },
+          { "view": "MonitoringInstructionsView", "purpose": "Provide device and protocol instructions" },
+          { "view": "ResultsInterpretationView", "purpose": "Compare office vs out-of-office readings" }
+        ]
+      },
+      "inputDataModel": {
+        "structName": "MaskedHypertensionInputModel",
+        "requiredFields": {
+          "officeSBP": { "type": "Int?", "validation": "<130 mm Hg" },
+          "officeDBP": { "type": "Int?", "validation": "<80 mm Hg" },
+          "treatmentStatus": { "type": "String?", "validation": "Must be 'untreated'" }
+        },
+        "optionalFields": {
+          "age": { "type": "Int?", "options": ["adults only - 18+"] },
+          "riskFactors": { "type": "[String]?", "options": ["diabetes", "CKD", "obesity", "family history"] },
+          "monitoringMethod": { "type": "String?", "options": ["ABPM", "HBPM"] }
+        },
+        "validationRules": [
+          "officeSBP < 130",
+          "officeDBP < 80",
+          "treatmentStatus must be 'untreated'",
+          "patient must be adult (≥18 years)"
+        ]
+      },
+      "logicEngine": {
+        "rules": [
+          "Check if office SBP <130 AND DBP <80 AND patient is untreated adult",
+          "If yes → consider out-of-office BP monitoring",
+          "Apply COR 2b (WEAK): Benefit ≥ Risk",
+          "Apply LOE B-NR: Moderate-quality evidence from nonrandomized studies",
+          "Recommendation: It may be reasonable to exclude masked hypertension",
+          "Monitoring options: Ambulatory BP monitoring (ABPM) or Home BP monitoring (HBPM)",
+          "If out-of-office BP is elevated despite normal office readings → suspect masked hypertension"
+        ],
+        "thresholdsExample": {
+          "categories": [
+            { "name": "Normal Office + Normal Out-of-Office", "action": "Masked hypertension excluded" },
+            { "name": "Normal Office + Elevated Out-of-Office", "action": "Masked hypertension suspected → confirm with repeat monitoring" }
+          ],
+          "corLoeMapping": {
+            "class": "2b",
+            "strength": "WEAK",
+            "benefit_risk": "Benefit ≥ Risk",
+            "phrasing": "May/Might be reasonable / May/Might be considered",
+            "loe": "B-NR",
+            "evidenceQuality": "Moderate-quality",
+            "evidenceSource": "1 or more nonrandomized studies, observational studies, or registry studies"
+          }
+        }
+      },
+      "outputModel": {
+        "structName": "MaskedHypertensionOutputModel",
+        "fields": {
+          "category": { "type": "String", "description": "'Masked Hypertension Screening'" },
+          "cor": { "type": "String", "description": "Class 2b" },
+          "loe": { "type": "String", "description": "Level B-NR" },
+          "recommendation": { "type": "String", "description": "In adults with untreated office SBP <130 mm Hg and DBP <80 mm Hg, it may be reasonable to exclude masked hypertension using out-of-office BP monitoring" },
+          "suggestedPhrasing": { "type": "String", "values": ["May be reasonable", "May be considered"] },
+          "outOfOfficeRecommended": { "type": "Bool", "description": "true" },
+          "maskedHypertensionSuspected": { "type": "Bool", "description": "true if out-of-office BP elevated" }
+        },
+        "constraints": ["deterministic", "renderable", "safe"]
+      },
+      "crisisRules": {
+        "thresholds": {
+          "sbp": "N/A - screening recommendation, not crisis management",
+          "dbp": "N/A"
+        },
+        "symptomsToAsk": [],
+        "escalationLogic": {
+          "ifAnySymptomPresent": "N/A",
+          "ifNoSymptoms": "N/A"
+        },
+        "appDisplay": {
+          "screenType": "Standard clinical recommendation display",
+          "button": "N/A",
+          "behavior": "Normal routing - educational/informational"
+        }
+      },
+      "nextStepRouting": {
+        "providerSuggestion": "Consider out-of-office BP monitoring (ABPM or HBPM) for patients meeting criteria",
+        "followUpTiming": "If masked hypertension excluded, repeat screening annually or with new risk factors",
+        "repeatMeasurement": "If out-of-office BP elevated, confirm with second monitoring session within 1-2 weeks",
+        "navigatorEscalation": "Flag patients with confirmed masked hypertension for treatment consideration",
+        "documentation": "Log office BP, out-of-office BP results, and masked hypertension diagnosis status"
+      },
+      "tags": {
+        "acute": false,
+        "chronic": true,
+        "screening": true,
+        "diagnosis": true,
+        "management": false,
+        "priority": "low",
+        "topic": "hypertension_screening"
+      }
+    }
+  }
+}

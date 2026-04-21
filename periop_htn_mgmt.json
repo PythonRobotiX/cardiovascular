@@ -1,0 +1,113 @@
+{
+  "moduleTemplate": {
+    "name": "Perioperative_Hypertension_Management",
+    "sections": {
+      "purpose": {
+        "clinicalProblem": {
+          "clinicalIntent": "Guide perioperative blood pressure medication management for surgical patients",
+          "whenToUse": "Preoperative assessment, surgical planning, medication reconciliation before elective major surgery",
+          "decisionOrAction": "Medication continuation/discontinuation decisions + surgical timing recommendations"
+        }
+      },
+      "userFlow": {
+        "navigationPath": [
+          { "view": "SurgicalPrepStartView", "purpose": "Entry point for perioperative assessment" },
+          { "view": "MedicationHistoryView", "purpose": "Collect current antihypertensive medications" },
+          { "view": "BPMeasurementView", "purpose": "Measure preoperative blood pressure" },
+          { "view": "RiskStratificationView", "purpose": "Assess high-risk patient status" },
+          { "view": "RecommendationEngineView", "purpose": "Apply ACC/AHA guidelines to patient data" },
+          { "view": "MedicationActionView", "purpose": "Display continuation/discontinuation recommendations" },
+          { "view": "SurgicalTimingView", "purpose": "Recommend deferral if BP elevated" },
+          { "view": "DocumentationView", "purpose": "Log recommendations to surgical plan" }
+        ]
+      },
+      "inputDataModel": {
+        "structName": "PerioperativeHypertensionInputModel",
+        "requiredFields": {
+          "systolic": { "type": "Int?", "validation": "70-250" },
+          "diastolic": { "type": "Int?", "validation": "40-150" },
+          "onBetaBlocker": { "type": "Bool?", "validation": "true/false" },
+          "onACEi": { "type": "Bool?", "validation": "true/false" },
+          "onARB": { "type": "Bool?", "validation": "true/false" },
+          "onClonidine": { "type": "Bool?", "validation": "true/false" }
+        },
+        "optionalFields": {
+          "betaBlockerChronic": { "type": "Bool?", "options": ["chronic use", "naive"] },
+          "surgeryType": { "type": "String?", "options": ["major", "elective major", "high-risk"] },
+          "highRiskPatient": { "type": "Bool?" }
+        },
+        "validationRules": [
+          "SBP: 70-250 mm Hg",
+          "DBP: 40-150 mm Hg",
+          "Medication status must be documented for BB, ACEi, ARB, clonidine"
+        ]
+      },
+      "logicEngine": {
+        "rules": [
+          "If patient on chronic BBs AND scheduled for major surgery → continue BBs throughout perioperative period",
+          "If patient on hypertension medications AND scheduled for elective major surgery → continue most medications (reasonable)",
+          "If patient on ACEi or ARB AND scheduled for major surgery → may consider discontinuation preoperatively to prevent hypotension",
+          "If SBP ≥180 OR DBP ≥110 AND scheduled for elective major surgery → may consider deferring surgery, especially in high-risk patients",
+          "If patient on BB or clonidine AND scheduled for surgery → abrupt preoperative discontinuation potentially harmful",
+          "If patient is BB-naïve AND scheduled for surgery → do not start BB on day of surgery"
+        ],
+        "thresholdsExample": {
+          "categories": [
+            { "name": "Continue Chronic BBs", "condition": "Chronic BB use + major surgery", "cor": "Class 1", "loe": "B-NR", "action": "Continue throughout perioperative period" },
+            { "name": "Continue Most Medications", "condition": "Elective major surgery", "cor": "Class 2a", "loe": "C-EO", "action": "Reasonable to continue" },
+            { "name": "Consider ACEi/ARB Discontinuation", "condition": "Major surgery + ACEi/ARB use", "cor": "Class 2b", "loe": "B-R", "action": "May discontinue preoperatively to prevent hypotension" },
+            { "name": "Consider Deferring Surgery", "condition": "SBP ≥180 OR DBP ≥110 + elective major surgery", "cor": "Class 2b", "loe": "C-LD", "action": "May consider deferring, especially high-risk" },
+            { "name": "No Abrupt Discontinuation of BB/Clonidine", "condition": "BB or clonidine use + surgery", "cor": "Class 3: Harm", "loe": "B-NR", "action": "Abrupt discontinuation potentially harmful" },
+            { "name": "No BB Initiation Day of Surgery", "condition": "BB-naïve + surgery", "cor": "Class 3: Harm", "loe": "B-R", "action": "Should not start on day of surgery" }
+          ]
+        }
+      },
+      "outputModel": {
+        "structName": "PerioperativeHypertensionOutputModel",
+        "fields": {
+          "category": { "type": "String", "description": "e.g., 'Continue Chronic Beta-Blockers'" },
+          "cor": { "type": "String", "values": ["Class 1", "Class 2a", "Class 2b", "Class 3: Harm"] },
+          "loe": { "type": "String", "values": ["B-NR", "C-EO", "B-R", "C-LD"] },
+          "recommendedAction": { "type": "String", "description": "Specific medication or surgical timing action" },
+          "isHarm": { "type": "Bool", "description": "True for Class 3 recommendations" },
+          "specialConsiderations": { "type": "[String]?", "condition": "if high-risk patient or specific medication" }
+        },
+        "constraints": ["deterministic", "renderable", "safe"]
+      },
+      "crisisRules": {
+        "thresholds": {
+          "sbp": "≥180",
+          "dbp": "≥110"
+        },
+        "symptomsToAsk": [
+          "High-risk surgical status"
+        ],
+        "escalationLogic": {
+          "ifAnySymptomPresent": "Consider deferring elective major surgery to minimize perioperative complications",
+          "ifNoSymptoms": "May still consider deferral based on BP alone"
+        },
+        "appDisplay": {
+          "screenType": "Surgical deferral alert",
+          "button": "Review surgical timing with care team",
+          "behavior": "Flag for anesthesia consult before proceeding"
+        }
+      },
+      "nextStepRouting": {
+        "providerSuggestion": "Consult anesthesia and surgical teams for medication management plan",
+        "followUpTiming": "Reassess BP day of surgery if deferral considered",
+        "repeatMeasurement": "Confirm BP measurement before deferral decision",
+        "navigatorEscalation": "Flag Class 3: Harm recommendations as critical safety alerts - prevent abrupt BB/clonidine discontinuation or day-of-surgery BB initiation",
+        "documentation": "Log medication reconciliation and perioperative recommendations to surgical record"
+      },
+      "tags": {
+        "acute": true,
+        "chronic": false,
+        "screening": false,
+        "diagnosis": false,
+        "management": true,
+        "priority": "high",
+        "topic": "perioperative_hypertension"
+      }
+    }
+  }
+}

@@ -1,0 +1,106 @@
+{
+  "moduleTemplate": {
+    "name": "WhiteCoat_Masked_Hypertension_Monitoring",
+    "sections": {
+      "purpose": {
+        "clinicalProblem": {
+          "clinicalIntent": "Identify when out-of-office BP monitoring is appropriate for white-coat or masked hypertension to rule out sustained hypertension",
+          "whenToUse": "Adults with confirmed white-coat hypertension or masked hypertension during clinic visits",
+          "decisionOrAction": "Determine if out-of-office BP monitoring is reasonable to exclude transition to sustained hypertension"
+        }
+      },
+      "userFlow": {
+        "navigationPath": [
+          { "view": "HypertensionStartView", "purpose": "Entry point for hypertension evaluation" },
+          { "view": "ClassificationSelectionView", "purpose": "Select hypertension type (white-coat / masked / sustained)" },
+          { "view": "RiskAssessmentView", "purpose": "Assess transition risk factors" },
+          { "view": "OutOfOfficeBPView", "purpose": "Initiate out-of-office BP monitoring protocol" },
+          { "view": "MonitoringInstructionsView", "purpose": "Provide HBPM or ABPM instructions" },
+          { "view": "DataCollectionView", "purpose": "Collect out-of-office BP readings" },
+          { "view": "AnalysisView", "purpose": "Compare clinic vs out-of-office readings" },
+          { "view": "ResultView", "purpose": "Determine sustained hypertension transition status" }
+        ]
+      },
+      "inputDataModel": {
+        "structName": "WhiteCoatHypertensionInputModel",
+        "requiredFields": {
+          "clinicSystolic": { "type": "Int?", "validation": "70-250" },
+          "clinicDiastolic": { "type": "Int?", "validation": "40-150" },
+          "outOfOfficeSystolic": { "type": "Int?", "validation": "70-250" },
+          "outOfOfficeDiastolic": { "type": "Int?", "validation": "40-150" }
+        },
+        "optionalFields": {
+          "hypertensionType": { "type": "String?", "options": ["white-coat", "masked", "sustained"] },
+          "monitoringMethod": { "type": "String?", "options": ["HBPM", "ABPM"] },
+          "monitoringDuration": { "type": "Int?", "description": "Days of monitoring" }
+        },
+        "validationRules": [
+          "Must have both clinic and out-of-office readings",
+          "White-coat: elevated clinic + normal out-of-office",
+          "Masked: normal clinic + elevated out-of-office"
+        ]
+      },
+      "logicEngine": {
+        "rules": [
+          "Confirm white-coat or masked hypertension diagnosis",
+          "Initiate out-of-office BP monitoring",
+          "Compare clinic readings with out-of-office readings",
+          "If out-of-office readings become consistently elevated → flag transition to sustained hypertension",
+          "If out-of-office readings remain normal → continue monitoring periodically",
+          "COR 2a = MODERATE strength, Benefit >> Risk",
+          "LOE B-NR = Moderate-quality evidence from nonrandomized studies"
+        ],
+        "thresholdsExample": {
+          "categories": [
+            { "name": "White-Coat Hypertension", "clinic": "≥130/80", "outOfOffice": "<130/80", "action": "Out-of-office monitoring reasonable" },
+            { "name": "Masked Hypertension", "clinic": "<130/80", "outOfOffice": "≥130/80", "action": "Out-of-office monitoring reasonable" },
+            { "name": "Sustained Hypertension Transition", "clinic": "≥130/80", "outOfOffice": "≥130/80", "action": "Diagnosis confirmed, initiate treatment" }
+          ]
+        }
+      },
+      "outputModel": {
+        "structName": "WhiteCoatHypertensionOutputModel",
+        "fields": {
+          "category": { "type": "String", "description": "e.g., 'White-Coat Hypertension - Stable'" },
+          "consistency": { "type": "String?", "values": ["consistent", "inconsistent"], "description": "Clinic vs out-of-office consistency" },
+          "recommendedNextStep": { "type": "String", "description": "e.g., 'Continue periodic out-of-office monitoring' or 'Transition to sustained hypertension management'" },
+          "crisis": { "type": "Bool", "description": "false for this recommendation" },
+          "crisisSymptoms": { "type": "[String]?", "condition": "if crisis == true" }
+        },
+        "constraints": ["deterministic", "renderable", "safe"]
+      },
+      "crisisRules": {
+        "thresholds": {
+          "sbp": "N/A - not a crisis protocol",
+          "dbp": "N/A - not a crisis protocol"
+        },
+        "symptomsToAsk": [],
+        "escalationLogic": {
+          "ifAnySymptomPresent": "N/A",
+          "ifNoSymptoms": "N/A"
+        },
+        "appDisplay": {
+          "screenType": "Standard clinical guidance display",
+          "button": "N/A",
+          "behavior": "Normal routing"
+        }
+      },
+      "nextStepRouting": {
+        "providerSuggestion": "Out-of-office BP monitoring is reasonable to exclude transition to sustained hypertension",
+        "followUpTiming": "Repeat out-of-office monitoring every 3-6 months or sooner if clinic readings change",
+        "repeatMeasurement": "Confirm with HBPM over 7 days or ABPM over 24 hours",
+        "navigatorEscalation": "Flag if out-of-office readings show consistent elevation suggesting transition",
+        "documentation": "Log white-coat/masked hypertension status + monitoring results to health record"
+      },
+      "tags": {
+        "acute": false,
+        "chronic": true,
+        "screening": true,
+        "diagnosis": true,
+        "management": false,
+        "priority": "medium",
+        "topic": "hypertension"
+      }
+    }
+  }
+}

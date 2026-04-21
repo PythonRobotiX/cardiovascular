@@ -1,0 +1,125 @@
+{
+  "moduleTemplate": {
+    "name": "Hypertensive_Disorders_of_Pregnancy",
+    "sections": {
+      "purpose": {
+        "clinicalProblem": {
+          "clinicalIntent": "Classify hypertensive disorders in pregnancy for diagnosis, risk stratification, and management routing",
+          "whenToUse": "Prenatal visits, triage, labor & delivery, postpartum assessment with elevated BP",
+          "decisionOrAction": "Disorder classification (Chronic HTN / Gestational HTN / Preeclampsia / Superimposed Preeclampsia) + severity determination"
+        }
+      },
+      "userFlow": {
+        "navigationPath": [
+          { "view": "PregnancyBPStartView", "purpose": "Entry point for pregnancy BP assessment" },
+          { "view": "BPReadingView", "purpose": "Input SBP and DBP values" },
+          { "view": "GestationalAgeView", "purpose": "Determine weeks of gestation (<20 vs ≥20 weeks)" },
+          { "view": "PriorHypertensionView", "purpose": "Ask about HTN diagnosis before pregnancy or prior to 20 weeks" },
+          { "view": "ProteinuriaAssessmentView", "purpose": "Check for proteinuria presence" },
+          { "view": "EndOrganDysfunctionView", "purpose": "Screen for neurologic, hepatic, renal, hematologic, pulmonary findings" },
+          { "view": "ClassificationResultView", "purpose": "Display disorder type + severity" },
+          { "view": "SevereHTNAlertView", "purpose": "Red alert for SBP≥160 or DBP≥110" }
+        ]
+      },
+      "inputDataModel": {
+        "structName": "PregnancyHypertensionInputModel",
+        "requiredFields": {
+          "systolic": { "type": "Int?", "validation": "70-250" },
+          "diastolic": { "type": "Int?", "validation": "40-150" },
+          "gestationalWeeks": { "type": "Int?", "validation": "0-42" }
+        },
+        "optionalFields": {
+          "priorHypertensionDiagnosis": { "type": "Bool?", "description": "Diagnosed before pregnancy or <20 weeks" },
+          "proteinuriaPresent": { "type": "Bool?" },
+          "neurologicFindings": { "type": "Bool?", "options": ["headache", "vision changes", "hyperreflexia"] },
+          "pulmonaryEdema": { "type": "Bool?" },
+          "hematologicFindings": { "type": "Bool?", "options": ["thrombocytopenia", "hemolysis"] },
+          "acuteKidneyInjury": { "type": "Bool?" },
+          "hepaticDysfunction": { "type": "Bool?", "options": ["elevated LFTs", "epigastric pain", "RUQ pain"] }
+        },
+        "validationRules": [
+          "systolic: 70-250",
+          "diastolic: 40-150",
+          "systolic >= diastolic",
+          "gestationalWeeks: 0-42",
+          "If gestationalWeeks >= 20 and SBP/DBP meets hypertension threshold → further classification required"
+        ]
+      },
+      "logicEngine": {
+        "rules": [
+          "First check if SBP ≥140 or DBP ≥90 → hypertension present",
+          "If no hypertension → normal, no disorder",
+          "If hypertension present and prior diagnosis OR <20 weeks → Chronic Hypertension",
+          "If hypertension present at ≥20 weeks, no proteinuria, no end-organ dysfunction → Gestational Hypertension",
+          "If hypertension at ≥20 weeks WITH proteinuria OR end-organ dysfunction → Preeclampsia",
+          "If prior chronic hypertension + new-onset proteinuria or end-organ dysfunction after 20 weeks → Preeclampsia Superimposed on Chronic Hypertension",
+          "If SBP ≥160 OR DBP ≥110 → flag as severe-range hypertension regardless of classification"
+        ],
+        "thresholdsExample": {
+          "categories": [
+            { "name": "Normal", "sbp": "<140", "dbp": "<90", "operator": "and" },
+            { "name": "Hypertension in Pregnancy", "sbp": "≥140", "dbp": "≥90", "operator": "or" },
+            { "name": "Severe-Range Hypertension", "sbp": "≥160", "dbp": "≥110", "operator": "or" }
+          ],
+          "disorders": [
+            { "name": "Chronic Hypertension", "timing": "prior to pregnancy or <20 weeks", "requiresProteinuria": false },
+            { "name": "Gestational Hypertension", "timing": "≥20 weeks", "requiresProteinuria": false, "requiresEndOrganDysfunction": false },
+            { "name": "Preeclampsia", "timing": "≥20 weeks", "requiresProteinuria": true, "requiresEndOrganDysfunction": true, "operator": "or" },
+            { "name": "Preeclampsia Superimposed on Chronic Hypertension", "timing": "after 20 weeks", "requiresNewProteinuria": true, "requiresNewEndOrganDysfunction": true, "operator": "or" }
+          ]
+        }
+      },
+      "outputModel": {
+        "structName": "PregnancyHypertensionOutputModel",
+        "fields": {
+          "category": { "type": "String", "description": "e.g., 'Preeclampsia', 'Gestational Hypertension', 'Chronic Hypertension', 'Preeclampsia Superimposed on Chronic Hypertension'" },
+          "severity": { "type": "String", "values": ["mild", "severe-range"] },
+          "proteinuriaPresent": { "type": "Bool?" },
+          "endOrganDysfunction": { "type": "[String]?", "description": "List of affected systems if present" },
+          "recommendedNextStep": { "type": "String" },
+          "requiresDeliveryEvaluation": { "type": "Bool", "description": "True for severe-range or preeclampsia" }
+        },
+        "constraints": ["deterministic", "renderable", "safe"]
+      },
+      "crisisRules": {
+        "thresholds": {
+          "sbp": "≥160",
+          "dbp": "≥110"
+        },
+        "symptomsToAsk": [
+          "Severe headache",
+          "Vision changes (blurring, spots)",
+          "Upper abdominal pain (epigastric/RUQ)",
+          "Shortness of breath",
+          "Decreased urine output",
+          "Nausea/vomiting"
+        ],
+        "escalationLogic": {
+          "ifAnySymptomPresent": "Immediate maternal-fetal medicine consult + consider delivery",
+          "ifNoSymptoms": "Urgent BP management + fetal assessment + close monitoring"
+        },
+        "appDisplay": {
+          "screenType": "Red alert crisis screen",
+          "button": "Emergency Consultation / Triage",
+          "behavior": "Do not proceed to routine follow-up; immediate escalation required"
+        }
+      },
+      "nextStepRouting": {
+        "providerSuggestion": "Maternal-fetal medicine or OB emergency consultation",
+        "followUpTiming": "Severe-range: immediate; Gestational HTN: repeat in 1 week; Chronic HTN: routine prenatal care",
+        "repeatMeasurement": "Verify severe-range BP with repeat in 15 minutes",
+        "navigatorEscalation": "Page OB provider immediately for severe-range or preeclampsia",
+        "documentation": "Log disorder type, severity, proteinuria status, end-organ findings to prenatal record"
+      },
+      "tags": {
+        "acute": true,
+        "chronic": false,
+        "screening": true,
+        "diagnosis": true,
+        "management": true,
+        "priority": "high",
+        "topic": "maternal_health"
+      }
+    }
+  }
+}

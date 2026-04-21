@@ -1,0 +1,112 @@
+{
+  "moduleTemplate": {
+    "name": "Diet_and_Nutrients",
+    "sections": {
+      "purpose": {
+        "clinicalProblem": {
+          "clinicalIntent": "Dietary intervention to prevent or treat elevated BP and hypertension",
+          "whenToUse": "Adults with or without hypertension seeking prevention or treatment of elevated BP",
+          "decisionOrAction": "Recommend DASH or heart-healthy eating pattern for BP management"
+        }
+      },
+      "userFlow": {
+        "navigationPath": [
+          { "view": "DietaryStartView", "purpose": "Entry point for dietary assessment" },
+          { "view": "BPStatusView", "purpose": "Determine if patient has hypertension or elevated BP" },
+          { "view": "CurrentDietView", "purpose": "Assess current eating patterns" },
+          { "view": "DASHRecommendationView", "purpose": "Present DASH eating plan recommendation" },
+          { "view": "DietaryComponentsView", "purpose": "Show heart-healthy food groups" },
+          { "view": "ImplementationPlanView", "purpose": "Create personalized dietary action plan" },
+          { "view": "FollowUpScheduleView", "purpose": "Set monitoring and support timeline" },
+          { "view": "ResourceLibraryView", "purpose": "Provide DASH meal plans and recipes" }
+        ]
+      },
+      "inputDataModel": {
+        "structName": "DietAndNutrientsInputModel",
+        "requiredFields": {
+          "hasHypertension": { "type": "Bool?", "validation": "true/false" },
+          "hasElevatedBP": { "type": "Bool?", "validation": "true/false" }
+        },
+        "optionalFields": {
+          "currentDietPattern": { "type": "String?", "options": ["typical Western", "Mediterranean", "DASH-like", "low sodium", "other"] },
+          "sodiumIntake": { "type": "String?", "options": ["low", "moderate", "high", "unknown"] },
+          "fruitVegetableIntake": { "type": "String?", "options": ["<2 servings/day", "2-4 servings/day", "5+ servings/day"] },
+          "willingnessToChange": { "type": "Int?", "validation": "1-10 scale" }
+        },
+        "validationRules": [
+          "BP status must be documented",
+          "Dietary assessment completed before recommendation"
+        ]
+      },
+      "logicEngine": {
+        "rules": [
+          "If adult with OR without hypertension → eligible for DASH recommendation",
+          "COR 1 + LOE A → STRONG recommendation with high-quality evidence",
+          "Recommend DASH eating plan as primary dietary intervention",
+          "Goal: prevent elevated BP in normotensive adults OR treat hypertension in diagnosed adults",
+          "Provide specific guidance on sodium reduction, fruits/vegetables, whole grains, lean protein"
+        ],
+        "thresholdsExample": {
+          "categories": [
+            { "name": "Class 1", "strength": "STRONG", "benefit_risk": ">>>", "phrasing": "Is recommended" },
+            { "name": "Level A", "quality": "High-quality evidence", "source": ">1 RCT or meta-analyses of high-quality RCTs" }
+          ],
+          "dashComponents": {
+            "sodium": "<2300mg/day, ideal <1500mg/day",
+            "fruits_vegetables": "4-5 servings each per day",
+            "whole_grains": "6-8 servings per day",
+            "low_fat_dairy": "2-3 servings per day",
+            "lean_protein": "<6 servings per day",
+            "saturated_fat": "<6% of daily calories"
+          }
+        }
+      },
+      "outputModel": {
+        "structName": "DietAndNutrientsOutputModel",
+        "fields": {
+          "category": { "type": "String", "description": "Class 1 (STRONG) Recommendation" },
+          "corStrength": { "type": "String", "values": ["STRONG"] },
+          "suggestedPhrasing": { "type": "String", "description": "Is recommended" },
+          "loe": { "type": "String", "description": "Level A" },
+          "loeDescription": { "type": "String", "description": "High-quality evidence from >1 RCT or meta-analyses of high-quality RCTs" },
+          "recommendation": { "type": "String", "description": "In adults with or without hypertension, a heart-healthy eating pattern, such as the DASH eating plan, is recommended to prevent or treat elevated BP and hypertension" },
+          "dashPlanProvided": { "type": "Bool" },
+          "followUpRequired": { "type": "Bool" }
+        },
+        "constraints": ["deterministic", "renderable", "safe"]
+      },
+      "crisisRules": {
+        "thresholds": {
+          "sbp": "N/A - dietary intervention not for acute crisis",
+          "dbp": "N/A"
+        },
+        "symptomsToAsk": [],
+        "escalationLogic": {
+          "ifAnySymptomPresent": "N/A",
+          "ifNoSymptoms": "N/A"
+        },
+        "appDisplay": {
+          "screenType": "Standard educational display with evidence badge",
+          "button": "Access DASH meal planner",
+          "behavior": "Normal routing with dietary resources"
+        }
+      },
+      "nextStepRouting": {
+        "providerSuggestion": "Implement DASH eating plan with sodium reduction to <2300mg/day",
+        "followUpTiming": "Reassess BP in 4 weeks, dietary adherence in 2 weeks",
+        "repeatMeasurement": "Monitor BP monthly; repeat dietary assessment at 3 months",
+        "navigatorEscalation": "Flag if patient unable to access recommended foods for social work referral",
+        "documentation": "Log DASH recommendation to prevention/treatment plan; document patient education provided"
+      },
+      "tags": {
+        "acute": false,
+        "chronic": true,
+        "screening": false,
+        "diagnosis": false,
+        "management": true,
+        "priority": "high",
+        "topic": "hypertension_nutrition"
+      }
+    }
+  }
+}

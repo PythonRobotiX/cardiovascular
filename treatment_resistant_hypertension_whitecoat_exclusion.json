@@ -1,0 +1,110 @@
+{
+  "moduleTemplate": {
+    "name": "Treatment_Resistant_Hypertension_WhiteCoat_Exclusion",
+    "sections": {
+      "purpose": {
+        "clinicalProblem": {
+          "clinicalIntent": "Exclude white-coat effect as a cause of pseudoresistance in adults with apparent treatment-resistant hypertension",
+          "whenToUse": "When office BP readings suggest treatment-resistant hypertension despite appropriate medication regimen",
+          "decisionOrAction": "Recommend out-of-office BP monitoring to differentiate true resistance from white-coat effect"
+        }
+      },
+      "userFlow": {
+        "navigationPath": [
+          { "view": "TRHStartView", "purpose": "Entry point for treatment-resistant hypertension evaluation" },
+          { "view": "OfficeBPReviewView", "purpose": "Confirm apparent treatment-resistant hypertension based on office BP" },
+          { "view": "MedicationAdherenceView", "purpose": "Verify appropriate medication regimen adherence" },
+          { "view": "PseudoresistanceScreeningView", "purpose": "Introduce white-coat effect as possible cause" },
+          { "view": "OutOfOfficeBPSelectionView", "purpose": "Select out-of-office monitoring method (ABPM or HBPM)" },
+          { "view": "MonitoringInstructionsView", "purpose": "Provide patient instructions for out-of-office monitoring" },
+          { "view": "ResultsInterpretationView", "purpose": "Compare office vs out-of-office readings" },
+          { "view": "ClassificationResultView", "purpose": "Determine true resistance vs white-coat effect" }
+        ]
+      },
+      "inputDataModel": {
+        "structName": "TRH_WhiteCoat_InputModel",
+        "requiredFields": {
+          "officeSystolic": { "type": "Int?", "validation": "70-250" },
+          "officeDiastolic": { "type": "Int?", "validation": "40-150" },
+          "outOfOfficeSystolic": { "type": "Int?", "validation": "70-250" },
+          "outOfOfficeDiastolic": { "type": "Int?", "validation": "40-150" }
+        },
+        "optionalFields": {
+          "medicationCount": { "type": "Int?", "validation": "Typically 3 or more including diuretic" },
+          "adherenceConfirmed": { "type": "Bool?" },
+          "monitoringType": { "type": "String?", "options": ["ABPM", "HBPM"] },
+          "monitoringDuration": { "type": "String?", "options": ["24 hours", "3-7 days", "7+ days"] }
+        },
+        "validationRules": [
+          "Office BP meets treatment-resistant criteria",
+          "Out-of-office BP available for comparison",
+          "Medication regimen optimized and adherence confirmed"
+        ]
+      },
+      "logicEngine": {
+        "rules": [
+          "Confirm apparent treatment-resistant hypertension (office BP above target despite ≥3 medications including diuretic)",
+          "Exclude other causes of pseudoresistance (medication non-adherence, improper technique, etc.)",
+          "Obtain out-of-office BP monitoring (ABPM preferred or HBPM)",
+          "Compare office BP to out-of-office BP averages",
+          "If out-of-office BP is significantly lower than office BP → white-coat effect",
+          "If out-of-office BP remains elevated → true treatment-resistant hypertension"
+        ],
+        "thresholdsExample": {
+          "categories": [
+            { "name": "White-Coat Effect", "definition": "Elevated office BP with normal out-of-office BP", "action": "Continue current medications, avoid unnecessary intensification" },
+            { "name": "True Treatment-Resistant Hypertension", "definition": "Elevated office AND out-of-office BP", "action": "Consider additional medications or specialized referral" }
+          ]
+        }
+      },
+      "outputModel": {
+        "structName": "TRH_WhiteCoat_OutputModel",
+        "fields": {
+          "category": { "type": "String", "description": "e.g., 'White-Coat Effect' or 'True Treatment-Resistant Hypertension'" },
+          "officeBP": { "type": "String", "description": "Formatted office BP reading" },
+          "outOfOfficeBP": { "type": "String", "description": "Formatted out-of-office BP average" },
+          "recommendation": { "type": "String", "description": "Clinical action based on comparison" },
+          "monitoringMethodUsed": { "type": "String", "values": ["ABPM", "HBPM"] }
+        },
+        "constraints": ["deterministic", "renderable", "safe"]
+      },
+      "crisisRules": {
+        "thresholds": {
+          "sbp": "≥180",
+          "dbp": "≥120"
+        },
+        "symptomsToAsk": [
+          "Chest pain",
+          "Shortness of breath",
+          "Neurological symptoms",
+          "Severe headache"
+        ],
+        "escalationLogic": {
+          "ifAnySymptomPresent": "Do not proceed with white-coat evaluation, send to ER immediately",
+          "ifNoSymptoms": "Proceed with out-of-office monitoring for white-coat exclusion"
+        },
+        "appDisplay": {
+          "screenType": "Standard clinical decision support with crisis override",
+          "button": "Standard navigation with crisis alert available",
+          "behavior": "Screen for crisis symptoms first, then proceed"
+        }
+      },
+      "nextStepRouting": {
+        "providerSuggestion": "If white-coat effect confirmed: continue current regimen, avoid medication escalation. If true resistance: consider adding mineralocorticoid receptor antagonist or refer to specialist",
+        "followUpTiming": "Repeat out-of-office monitoring in 3-6 months or if office BP changes",
+        "repeatMeasurement": "Confirm with repeat out-of-office monitoring annually or with medication changes",
+        "navigatorEscalation": "Flag true treatment-resistant hypertension for care team review",
+        "documentation": "Log office vs out-of-office BP comparison to health record"
+      },
+      "tags": {
+        "acute": false,
+        "chronic": true,
+        "screening": true,
+        "diagnosis": true,
+        "management": true,
+        "priority": "medium",
+        "topic": "hypertension_resistance"
+      }
+    }
+  }
+}

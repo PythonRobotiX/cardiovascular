@@ -1,0 +1,108 @@
+{
+  "moduleTemplate": {
+    "name": "Alcohol_Management_Hypertension",
+    "sections": {
+      "purpose": {
+        "clinicalProblem": {
+          "clinicalIntent": "Alcohol intake reduction to prevent or treat elevated BP and hypertension",
+          "whenToUse": "Initial visit, hypertension diagnosis, elevated BP screening, medication adjustment",
+          "decisionOrAction": "Recommend alcohol reduction goal + drink limits by sex"
+        }
+      },
+      "userFlow": {
+        "navigationPath": [
+          { "view": "AlcoholStartView", "purpose": "Entry point for alcohol assessment" },
+          { "view": "AlcoholScreeningView", "purpose": "Assess current alcohol consumption" },
+          { "view": "AlcoholEducationView", "purpose": "Display standard drink definitions and limits" },
+          { "view": "AlcoholGoalView", "purpose": "Present recommended reduction goals (abstinence or ≤1/≤2 drinks/d)" },
+          { "view": "AlcoholSexSpecificView", "purpose": "Show sex-specific limits (women ≤1, men ≤2)" },
+          { "view": "AlcoholProcessingView", "purpose": "Calculate current vs recommended intake" },
+          { "view": "AlcoholResultView", "purpose": "Display personalized reduction plan" },
+          { "view": "AlcoholFollowUpView", "purpose": "Schedule follow-up for alcohol reduction progress" }
+        ]
+      },
+      "inputDataModel": {
+        "structName": "AlcoholInputModel",
+        "requiredFields": {
+          "currentDrinksPerDay": { "type": "Int?", "validation": "0-20" },
+          "sex": { "type": "String?", "validation": "Must be 'male' or 'female'" }
+        },
+        "optionalFields": {
+          "hasHypertension": { "type": "Bool?", "options": [true, false] },
+          "beverageType": { "type": "String?", "options": ["beer", "wine", "distilled spirits", "mixed"] },
+          "standardDrinkUnderstanding": { "type": "Bool?", "options": [true, false] }
+        },
+        "validationRules": [
+          "currentDrinksPerDay: 0-20",
+          "sex: male or female",
+          "If sex == female → max recommended = 1 drink/d",
+          "If sex == male → max recommended = 2 drinks/d"
+        ]
+      },
+      "logicEngine": {
+        "rules": [
+          "Class of Recommendation: 1 (STRONG) - Benefit >>> Risk",
+          "Level of Evidence: A (High-quality evidence from >1 RCT or meta-analyses)",
+          "Target population: Adults with or without hypertension who currently consume alcohol",
+          "Primary goal: Abstinence",
+          "Secondary goal: Reduction to ≤1 drink/d (women) or ≤2 drinks/d (men)",
+          "Standard drink definition: 12-14g alcohol = 12oz beer (5% ABV), 5oz wine (12% ABV), or 1.5oz distilled spirits (40% ABV)",
+          "If current intake > recommended → flag for counseling",
+          "If patient unwilling to abstain → recommend reduction strategy"
+        ],
+        "thresholdsExample": {
+          "categories": [
+            { "name": "Abstinence", "drinks_per_day": "0", "recommendation": "Optimal goal for prevention/treatment" },
+            { "name": "Women - Reduced", "drinks_per_day": "≤1", "recommendation": "Acceptable if abstinence not possible" },
+            { "name": "Men - Reduced", "drinks_per_day": "≤2", "recommendation": "Acceptable if abstinence not possible" },
+            { "name": "Women - Excess", "drinks_per_day": "≥2", "recommendation": "Requires intervention" },
+            { "name": "Men - Excess", "drinks_per_day": "≥3", "recommendation": "Requires intervention" }
+          ]
+        }
+      },
+      "outputModel": {
+        "structName": "AlcoholOutputModel",
+        "fields": {
+          "category": { "type": "String", "description": "e.g., 'Exceeds recommended limits'" },
+          "consistency": { "type": "String?", "values": ["at_goal", "exceeds_limit", "abstinent"] },
+          "recommendedNextStep": { "type": "String", "description": "e.g., 'Reduce to ≤1 drink/d for women or ≤2 drinks/d for men'" },
+          "crisis": { "type": "Bool", "description": "false - not acute crisis" },
+          "crisisSymptoms": { "type": "[String]?", "condition": "if crisis == true", "value": null }
+        },
+        "constraints": ["deterministic", "renderable", "safe"]
+      },
+      "crisisRules": {
+        "thresholds": {
+          "sbp": "N/A - alcohol module",
+          "dbp": "N/A - alcohol module"
+        },
+        "symptomsToAsk": [],
+        "escalationLogic": {
+          "ifAnySymptomPresent": "N/A - lifestyle modification module",
+          "ifNoSymptoms": "N/A"
+        },
+        "appDisplay": {
+          "screenType": "Standard education + goal setting screen",
+          "button": "Create reduction plan",
+          "behavior": "Normal routing to BP management"
+        }
+      },
+      "nextStepRouting": {
+        "providerSuggestion": "Counsel on alcohol reduction strategies; refer to addiction medicine if unable to reduce",
+        "followUpTiming": "Reassess alcohol intake at next visit (3-6 months)",
+        "repeatMeasurement": "Monitor BP after alcohol reduction (4-12 weeks)",
+        "navigatorEscalation": "Flag patients with alcohol use disorder for care team notification",
+        "documentation": "Log current intake, reduction goal, and counseling provided to health record"
+      },
+      "tags": {
+        "acute": false,
+        "chronic": true,
+        "screening": true,
+        "diagnosis": false,
+        "management": true,
+        "priority": "high",
+        "topic": "lifestyle_modification"
+      }
+    }
+  }
+}

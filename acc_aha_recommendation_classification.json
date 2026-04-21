@@ -1,0 +1,113 @@
+{
+  "moduleTemplate": {
+    "name": "ACC_AHA_Recommendation_Classification",
+    "sections": {
+      "purpose": {
+        "clinicalProblem": {
+          "clinicalIntent": "Standardized classification of clinical recommendation strength and evidence quality",
+          "whenToUse": "Guideline development, clinical decision support, treatment recommendation ranking",
+          "decisionOrAction": "COR + LOE assignment for clinical recommendations"
+        }
+      },
+      "userFlow": {
+        "navigationPath": [
+          { "view": "ClassificationStartView", "purpose": "Entry point for recommendation classification" },
+          { "view": "CORSelectionView", "purpose": "Select Class of Recommendation (1, 2a, 2b, 3 No Benefit, 3 Harm)" },
+          { "view": "CORStrengthView", "purpose": "Display COR strength (STRONG/MODERATE/WEAK) and risk-benefit ratio" },
+          { "view": "CORPhrasingView", "purpose": "Show suggested phrasing for selected COR" },
+          { "view": "LOESelectionView", "purpose": "Select Level of Evidence (A, B-R, B-NR, C-LD, C-EO)" },
+          { "view": "LOEQualityView", "purpose": "Display evidence quality description" },
+          { "view": "CombinedResultView", "purpose": "Show final COR + LOE assignment" },
+          { "view": "DocumentationView", "purpose": "Log recommendation to guideline document" }
+        ]
+      },
+      "inputDataModel": {
+        "structName": "ACC_AHA_InputModel",
+        "requiredFields": {
+          "classOfRecommendation": { "type": "String?", "validation": "Must be one of: Class 1, Class 2a, Class 2b, Class 3 No Benefit, Class 3 Harm" },
+          "levelOfEvidence": { "type": "String?", "validation": "Must be one of: A, B-R, B-NR, C-LD, C-EO" }
+        },
+        "optionalFields": {
+          "comparativeEffectiveness": { "type": "String?", "options": ["preference statement", "no comparison"] },
+          "evidenceSource": { "type": "String?", "options": ["RCT", "meta-analysis", "observational", "registry", "expert opinion"] }
+        },
+        "validationRules": [
+          "COR must be valid class",
+          "LOE must be valid level",
+          "Any COR may be paired with any LOE"
+        ]
+      },
+      "logicEngine": {
+        "rules": [
+          "Determine COR based on benefit >> risk (Class 1), benefit >> risk (Class 2a), benefit ≥ risk (Class 2b), benefit = risk (Class 3 No Benefit), risk > benefit (Class 3 Harm)",
+          "Assign COR strength: STRONG (Class 1, Class 3 Harm), MODERATE (Class 2a, Class 3 No Benefit), WEAK (Class 2b)",
+          "Select suggested phrasing based on COR",
+          "Determine LOE based on evidence quality and study design",
+          "Combine COR + LOE for final recommendation",
+          "Note: LOE C does not imply weak recommendation"
+        ],
+        "thresholdsExample": {
+          "categories": [
+            { "name": "Class 1", "strength": "STRONG", "benefit_risk": ">>>", "phrasing": "Is recommended / Is indicated / Should be performed" },
+            { "name": "Class 2a", "strength": "MODERATE", "benefit_risk": ">>", "phrasing": "Is reasonable / Can be useful" },
+            { "name": "Class 2b", "strength": "WEAK", "benefit_risk": "≥", "phrasing": "May/Might be reasonable / May/Might be considered" },
+            { "name": "Class 3 No Benefit", "strength": "MODERATE", "benefit_risk": "=", "phrasing": "Is not recommended / Is not indicated" },
+            { "name": "Class 3 Harm", "strength": "STRONG", "benefit_risk": "Risk > Benefit", "phrasing": "Potentially harmful / Causes harm" }
+          ],
+          "evidenceLevels": [
+            { "name": "Level A", "quality": "High-quality", "source": ">1 RCT, meta-analyses of high-quality RCTs, or RCTs + high-quality registry" },
+            { "name": "Level B-R", "quality": "Moderate-quality", "source": "1 or more RCTs or meta-analyses of moderate-quality RCTs" },
+            { "name": "Level B-NR", "quality": "Moderate-quality", "source": "1 or more nonrandomized studies, observational studies, or registry studies" },
+            { "name": "Level C-LD", "quality": "Limited Data", "source": "Randomized/nonrandomized studies with design limitations, physiological/mechanistic studies" },
+            { "name": "Level C-EO", "quality": "Expert Opinion", "source": "Consensus of expert opinion based on clinical experience" }
+          ]
+        }
+      },
+      "outputModel": {
+        "structName": "ACC_AHA_OutputModel",
+        "fields": {
+          "category": { "type": "String", "description": "e.g., 'Class 2a (MODERATE)'" },
+          "corStrength": { "type": "String", "values": ["STRONG", "MODERATE", "WEAK"] },
+          "suggestedPhrasing": { "type": "String", "description": "e.g., 'Is reasonable, Can be useful/effective/beneficial'" },
+          "loe": { "type": "String", "description": "e.g., 'Level B-R'" },
+          "loeDescription": { "type": "String", "description": "e.g., 'Moderate-quality evidence from 1 or more RCTs'" },
+          "comparativeEffectiveness": { "type": "String?", "condition": "if applicable" },
+          "isHarm": { "type": "Bool", "description": "true for Class 3 Harm" }
+        },
+        "constraints": ["deterministic", "renderable", "safe"]
+      },
+      "crisisRules": {
+        "thresholds": {
+          "sbp": "N/A",
+          "dbp": "N/A"
+        },
+        "symptomsToAsk": [],
+        "escalationLogic": {
+          "ifAnySymptomPresent": "N/A - classification system only",
+          "ifNoSymptoms": "N/A"
+        },
+        "appDisplay": {
+          "screenType": "Standard classification display",
+          "button": "N/A",
+          "behavior": "Normal routing"
+        }
+      },
+      "nextStepRouting": {
+        "providerSuggestion": "Apply classified recommendation to clinical guideline or decision support",
+        "followUpTiming": "Update when new evidence becomes available",
+        "repeatMeasurement": "Reclassify if evidence quality changes",
+        "navigatorEscalation": "Flag Class 3 Harm recommendations as critical safety alerts",
+        "documentation": "Log COR + LOE to clinical decision record"
+      },
+      "tags": {
+        "acute": false,
+        "chronic": false,
+        "screening": false,
+        "diagnosis": false,
+        "management": true,
+        "priority": "high",
+        "topic": "clinical_guidelines"
+      }
+    }
+  }
+}

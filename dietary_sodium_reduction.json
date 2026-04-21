@@ -1,0 +1,111 @@
+{
+  "moduleTemplate": {
+    "name": "Dietary_Sodium_Reduction",
+    "sections": {
+      "purpose": {
+        "clinicalProblem": {
+          "clinicalIntent": "Prevent or treat elevated blood pressure and hypertension through dietary sodium restriction",
+          "whenToUse": "Initial prevention counseling, hypertension diagnosis, BP management visit, dietary assessment",
+          "decisionOrAction": "Sodium reduction recommendation with daily intake targets + contraindication screening"
+        }
+      },
+      "userFlow": {
+        "navigationPath": [
+          { "view": "SodiumStartView", "purpose": "Entry point for dietary sodium assessment" },
+          { "view": "ContraindicationScreeningView", "purpose": "Screen for severe symptomatic orthostatic hypotension" },
+          { "view": "CurrentIntakeAssessmentView", "purpose": "Estimate patient's current daily sodium intake" },
+          { "view": "TargetSettingView", "purpose": "Set 2300 mg/d target with 1500 mg/d ideal goal" },
+          { "view": "EducationView", "purpose": "Provide sodium reduction strategies and food sources" },
+          { "view": "ActionPlanView", "purpose": "Create personalized reduction plan" },
+          { "view": "FollowUpScheduleView", "purpose": "Schedule monitoring and reassessment" },
+          { "view": "DocumentationView", "purpose": "Log recommendation to health record" }
+        ]
+      },
+      "inputDataModel": {
+        "structName": "DietarySodiumInputModel",
+        "requiredFields": {
+          "hasHypertension": { "type": "Bool?", "validation": "true/false" },
+          "currentSodiumIntake": { "type": "Int?", "validation": "0-10000 mg/d" }
+        },
+        "optionalFields": {
+          "orthostaticHypotensionSymptoms": { "type": "Bool?", "description": "Severe, symptomatic orthostatic hypotension" },
+          "orthostaticSeverity": { "type": "String?", "options": ["mild", "moderate", "severe"] },
+          "symptomaticStatus": { "type": "Bool?", "description": "Whether orthostatic hypotension is symptomatic" },
+          "previousSodiumReductionAttempts": { "type": "Bool?" }
+        },
+        "validationRules": [
+          "If orthostaticHypotensionSymptoms == true AND severity == 'severe' AND symptomaticStatus == true → contraindication",
+          "Target range: <2300 mg/d, ideal <1500 mg/d",
+          "Current intake must be ≥0"
+        ]
+      },
+      "logicEngine": {
+        "rules": [
+          "Check for contraindication: severe, symptomatic orthostatic hypotension",
+          "If contraindication present → do not recommend sodium reduction",
+          "If no contraindication → recommend reduction to <2300 mg/d",
+          "Provide ideal goal of <1500 mg/d for optimal benefit",
+          "Applicable to adults with OR without hypertension",
+          "Recommendation strength: Class 1 (STRONG), Level of Evidence: A"
+        ],
+        "thresholdsExample": {
+          "categories": [
+            { "name": "Recommended", "condition": "No contraindication", "target": "<2300 mg/d", "ideal": "<1500 mg/d" },
+            { "name": "Contraindicated", "condition": "Severe, symptomatic orthostatic hypotension", "action": "Avoid sodium reduction" },
+            { "name": "Class Assignment", "cor": "1", "strength": "STRONG", "loe": "A", "quality": "High-quality evidence from >1 RCT or meta-analyses" }
+          ]
+        }
+      },
+      "outputModel": {
+        "structName": "DietarySodiumOutputModel",
+        "fields": {
+          "category": { "type": "String", "description": "e.g., 'Sodium Reduction Recommended' or 'Contraindicated'" },
+          "cor": { "type": "String", "description": "1" },
+          "loe": { "type": "String", "description": "A" },
+          "recommendationStrength": { "type": "String", "values": ["STRONG", "MODERATE", "WEAK", "CONTRAINDICATED"] },
+          "dailyTargetMg": { "type": "Int", "description": "2300" },
+          "idealTargetMg": { "type": "Int", "description": "1500" },
+          "phrasing": { "type": "String", "description": "Is recommended" },
+          "contraindicated": { "type": "Bool" },
+          "contraindicationReason": { "type": "String?", "condition": "if contraindicated == true" }
+        },
+        "constraints": ["deterministic", "renderable", "safe"]
+      },
+      "crisisRules": {
+        "thresholds": {
+          "sbp": "N/A",
+          "dbp": "N/A"
+        },
+        "symptomsToAsk": [
+          "Severe orthostatic hypotension",
+          "Symptomatic hypotension (dizziness, fainting upon standing)"
+        ],
+        "escalationLogic": {
+          "ifAnySymptomPresent": "Contraindicate sodium reduction, evaluate for underlying cause of orthostatic hypotension",
+          "ifNoSymptoms": "Proceed with sodium reduction recommendation"
+        },
+        "appDisplay": {
+          "screenType": "Standard clinical recommendation with contraindication alert",
+          "button": "Document recommendation or flag contraindication",
+          "behavior": "Screen for contraindication before proceeding"
+        }
+      },
+      "nextStepRouting": {
+        "providerSuggestion": "Implement dietary sodium reduction to <2300 mg/d with ideal goal <1500 mg/d",
+        "followUpTiming": "Reassess sodium intake and BP in 4-8 weeks",
+        "repeatMeasurement": "Monitor 24-hour urinary sodium excretion if available",
+        "navigatorEscalation": "Flag if patient has severe symptomatic orthostatic hypotension",
+        "documentation": "Log Class 1, LOE A recommendation to health record with target goals"
+      },
+      "tags": {
+        "acute": false,
+        "chronic": true,
+        "screening": false,
+        "diagnosis": false,
+        "management": true,
+        "priority": "high",
+        "topic": "hypertension_nutrition"
+      }
+    }
+  }
+}

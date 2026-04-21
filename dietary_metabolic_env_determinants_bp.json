@@ -1,0 +1,123 @@
+{
+  "moduleTemplate": {
+    "name": "Dietary_Metabolic_Environmental_Determinants_BP",
+    "sections": {
+      "purpose": {
+        "clinicalProblem": {
+          "clinicalIntent": "Identify and classify dietary, metabolic, and environmental factors that influence blood pressure regulation",
+          "whenToUse": "Hypertension risk assessment, lifestyle modification planning, environmental exposure screening",
+          "decisionOrAction": "Risk factor identification + targeted intervention recommendations"
+        }
+      },
+      "userFlow": {
+        "navigationPath": [
+          { "view": "DeterminantsStartView", "purpose": "Entry point for BP determinant assessment" },
+          { "view": "DietaryFactorsView", "purpose": "Assess sodium, potassium, alcohol, fiber, calcium, magnesium, plant protein intake" },
+          { "view": "MetabolicFactorsView", "purpose": "Evaluate weight, BMI, insulin resistance, metabolic health" },
+          { "view": "DemographicFactorsView", "purpose": "Capture age and age-related risk modifiers" },
+          { "view": "SleepPsychosocialView", "purpose": "Screen for sleep apnea, psychosocial stressors" },
+          { "view": "PhysicalActivityView", "purpose": "Assess physical activity and fitness levels" },
+          { "view": "EnvironmentalExposureView", "purpose": "Evaluate air pollution and heavy metal exposures" },
+          { "view": "DeterminantsResultView", "purpose": "Display risk factor profile + mitigation strategies" }
+        ]
+      },
+      "inputDataModel": {
+        "structName": "BPDeterminantsInputModel",
+        "requiredFields": {
+          "sodiumIntake": { "type": "String?", "validation": "low/medium/high (mg/day or urinary excretion)" },
+          "potassiumIntake": { "type": "String?", "validation": "low/medium/high (mg/day or urinary excretion)" },
+          "alcoholUse": { "type": "String?", "validation": "none/moderate/heavy (drinks/week)" },
+          "bmi": { "type": "Double?", "validation": "10-60" },
+          "age": { "type": "Int?", "validation": "18-120" }
+        },
+        "optionalFields": {
+          "fiberIntake": { "type": "String?", "options": ["low", "adequate", "high"] },
+          "calciumIntake": { "type": "String?", "options": ["low", "adequate", "high"] },
+          "magnesiumIntake": { "type": "String?", "options": ["low", "adequate", "high"] },
+          "plantProteinIntake": { "type": "String?", "options": ["low", "adequate", "high"] },
+          "insulinResistance": { "type": "Bool?" },
+          "obstructiveSleepApnea": { "type": "Bool?" },
+          "psychosocialStressors": { "type": "Bool?" },
+          "physicalActivityLevel": { "type": "String?", "options": ["sedentary", "moderate", "high", "athletic"] },
+          "airPollutionExposure": { "type": "String?", "options": ["low", "moderate", "high"] },
+          "heavyMetalExposure": { "type": "Bool?" }
+        },
+        "validationRules": [
+          "Sodium and potassium preferably measured by urinary excretion",
+          "BMI categories: normal 18.5-24.9, overweight 25-29.9, obese ≥30",
+          "Heavy alcohol: >14 drinks/week (men) or >7 drinks/week (women)"
+        ]
+      },
+      "logicEngine": {
+        "rules": [
+          "Identify primary dietary factors: high sodium, low potassium, alcohol overuse",
+          "Identify secondary dietary factors: low fiber, low calcium, low magnesium, low plant protein",
+          "Assess metabolic contributors: weight gain, overweight/obesity, insulin resistance",
+          "Apply age, obesity, and insulin resistance as sodium sensitivity modifiers",
+          "Flag obstructive sleep apnea and psychosocial stressors as exacerbating factors",
+          "Evaluate physical activity and fitness as ameliorating factors",
+          "Screen for environmental toxins: air pollution, heavy metals",
+          "Generate cumulative risk score based on factor count and severity",
+          "Provide lifestyle modification prioritization based on evidence strength"
+        ],
+        "thresholdsExample": {
+          "categories": [
+            { "name": "Primary Dietary", "factors": ["high sodium", "low potassium", "alcohol overuse"], "impact": "predominant" },
+            { "name": "Secondary Dietary", "factors": ["low fiber", "low calcium", "low magnesium", "low plant protein"], "impact": "moderate" },
+            { "name": "Metabolic", "factors": ["weight gain", "overweight/obesity", "insulin resistance"], "impact": "major contributor (lifespan)" },
+            { "name": "Sensitivity Modifiers", "factors": ["increasing age", "obesity", "insulin resistance"], "impact": "amplify sodium effect" },
+            { "name": "Exacerbating", "factors": ["obstructive sleep apnea", "psychosocial stressors"], "impact": "worsen BP control" },
+            { "name": "Ameliorating", "factors": ["physical activity", "fitness"], "impact": "lower BP" },
+            { "name": "Environmental", "factors": ["air pollution", "heavy metals"], "impact": "emerging evidence" }
+          ]
+        }
+      },
+      "outputModel": {
+        "structName": "BPDeterminantsOutputModel",
+        "fields": {
+          "category": { "type": "String", "description": "e.g., 'Primary Dietary + Metabolic Contributors'" },
+          "primaryFactors": { "type": "[String]", "description": "List of predominant risk factors identified" },
+          "secondaryFactors": { "type": "[String]", "description": "List of moderate impact factors identified" },
+          "sodiumSensitivity": { "type": "String", "values": ["normal", "increased", "high"], "description": "Modified by age, obesity, insulin resistance" },
+          "exacerbatingFactors": { "type": "[String]", "description": "Sleep apnea, psychosocial stressors" },
+          "amelioratingFactors": { "type": "[String]", "description": "Physical activity, fitness level" },
+          "environmentalRisks": { "type": "[String]", "description": "Air pollution, heavy metals" },
+          "recommendedInterventions": { "type": "[String]", "description": "Priority-ordered lifestyle modifications" }
+        },
+        "constraints": ["deterministic", "renderable", "safe"]
+      },
+      "crisisRules": {
+        "thresholds": {
+          "sbp": "N/A - risk factor module only",
+          "dbp": "N/A"
+        },
+        "symptomsToAsk": [],
+        "escalationLogic": {
+          "ifAnySymptomPresent": "N/A",
+          "ifNoSymptoms": "N/A"
+        },
+        "appDisplay": {
+          "screenType": "Risk factor education and modification planning",
+          "button": "Generate lifestyle prescription",
+          "behavior": "Normal routing to intervention module"
+        }
+      },
+      "nextStepRouting": {
+        "providerSuggestion": "Refer to lifestyle medicine or nutrition counseling for multiple dietary factors",
+        "followUpTiming": "Reassess in 3 months after lifestyle modifications",
+        "repeatMeasurement": "Repeat urinary sodium/potassium excretion after dietary changes",
+        "navigatorEscalation": "Flag severe obesity (BMI≥35) or insulin resistance for metabolic referral",
+        "documentation": "Log all risk factors to longitudinal health record with trend tracking"
+      },
+      "tags": {
+        "acute": false,
+        "chronic": true,
+        "screening": true,
+        "diagnosis": false,
+        "management": true,
+        "priority": "high",
+        "topic": "hypertension_risk_factors"
+      }
+    }
+  }
+}

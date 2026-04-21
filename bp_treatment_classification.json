@@ -1,0 +1,117 @@
+{
+  "moduleTemplate": {
+    "name": "BP_Treatment_Classification",
+    "sections": {
+      "purpose": {
+        "clinicalProblem": {
+          "clinicalIntent": "Standardized BP classification and treatment pathway based on ACC/AHA COR 1 (STRONG) recommendation with Level C-EO (Expert Opinion) evidence",
+          "whenToUse": "Initial BP assessment, treatment initiation, medication titration, follow-up scheduling",
+          "decisionOrAction": "BP category assignment + treatment pathway (lifestyle, medication initiation, follow-up timing)"
+        }
+      },
+      "userFlow": {
+        "navigationPath": [
+          { "view": "BPStartView", "purpose": "Entry point for BP measurement" },
+          { "view": "BPCategoryView", "purpose": "Display BP category (Normal, Elevated, Stage 1, Stage 2)" },
+          { "view": "RiskAssessmentView", "purpose": "For Stage 1: Check DM, CKD, or PREVENT risk ≥7.5%" },
+          { "view": "LifestyleTherapyView", "purpose": "Promote lifestyle therapy at all thresholds (COR 1)" },
+          { "view": "TreatmentDecisionView", "purpose": "Determine medication initiation based on clinical context" },
+          { "view": "MedicationInitiationView", "purpose": "Start BP-lowering medication if indicated" },
+          { "view": "FollowUpSchedulingView", "purpose": "Schedule follow-up based on BP goal achievement" },
+          { "view": "TreatmentIntensificationView", "purpose": "Consider intensification if goal not met" }
+        ]
+      },
+      "inputDataModel": {
+        "structName": "BP_COR1_InputModel",
+        "requiredFields": {
+          "systolic": { "type": "Int?", "validation": "70-250" },
+          "diastolic": { "type": "Int?", "validation": "40-150" }
+        },
+        "optionalFields": {
+          "hasDiabetes": { "type": "Bool?", "options": [true, false] },
+          "hasCKD": { "type": "Bool?", "options": [true, false] },
+          "preventRiskScore": { "type": "Double?", "validation": "0-100", "description": "10-year CVD risk percentage" },
+          "bpGoalMet": { "type": "Bool?", "options": [true, false], "condition": "after medication start" },
+          "adherenceOptimized": { "type": "Bool?", "options": [true, false], "condition": "if goal not met" }
+        },
+        "validationRules": [
+          "systolic: 70-250",
+          "diastolic: 40-150",
+          "systolic >= diastolic",
+          "PREVENT risk: 0-100%"
+        ]
+      },
+      "logicEngine": {
+        "rules": [
+          "Classify BP into category based on systolic and diastolic thresholds",
+          "At all thresholds: Promote lifestyle therapy (COR 1)",
+          "If Normal BP: Schedule reassessment in 1 year",
+          "If Elevated BP: Schedule reassessment in 3-6 months (COR 1)",
+          "If Stage 1: Check clinical context (DM, CKD, or PREVENT risk ≥7.5%)",
+          "Stage 1 with NO risk factors: Reassess in 3-6 months, continue monitoring if BP remains Stage 1",
+          "Stage 1 with YES risk factors: Initiate BP-lowering medication AND reassess in 1 month (COR 1)",
+          "If Stage 2: Initiate BP-lowering medication AND reassess in 1 month (COR 1)",
+          "After medication start: If BP goal MET → reassess in 3-6 months (COR 1)",
+          "After medication start: If BP goal NOT MET → consider intensification of therapy while optimizing adherence"
+        ],
+        "thresholdsExample": {
+          "categories": [
+            { "name": "Normal BP", "sbp": "<120", "dbp": "<80", "operator": "and", "action": "Reassess in 1 year" },
+            { "name": "Elevated BP", "sbp": "120-129", "dbp": "<80", "operator": "and", "action": "Reassess in 3-6 months (COR 1)" },
+            { "name": "Stage 1 Hypertension", "sbp": "130-139", "dbp": "80-89", "operator": "or", "action": "Check DM, CKD, or PREVENT risk ≥7.5%" },
+            { "name": "Stage 2 Hypertension", "sbp": "≥140", "dbp": "≥90", "operator": "or", "action": "Initiate medication + reassess in 1 month (COR 1)" }
+          ],
+          "riskFactors": {
+            "diabetes": "DM",
+            "ckd": "Chronic Kidney Disease",
+            "preventThreshold": "≥7.5% (10-year CVD risk)"
+          }
+        }
+      },
+      "outputModel": {
+        "structName": "BP_COR1_OutputModel",
+        "fields": {
+          "category": { "type": "String", "description": "e.g., 'Stage 1 Hypertension'" },
+          "lifestyleTherapyRecommended": { "type": "Bool", "description": "Always true for all thresholds (COR 1)" },
+          "medicationInitiated": { "type": "Bool", "description": "True for Stage 1 with risk factors or Stage 2" },
+          "followUpInterval": { "type": "String", "values": ["1 year", "3-6 months", "1 month"] },
+          "bpGoalMet": { "type": "Bool?", "condition": "after medication start" },
+          "treatmentIntensificationNeeded": { "type": "Bool?", "condition": "if bpGoalMet == false" }
+        },
+        "constraints": ["deterministic", "renderable", "safe"]
+      },
+      "crisisRules": {
+        "thresholds": {
+          "sbp": "Not applicable for this COR/LOE combination",
+          "dbp": "Not applicable for this COR/LOE combination"
+        },
+        "symptomsToAsk": [],
+        "escalationLogic": {
+          "ifAnySymptomPresent": "N/A - routine BP management pathway",
+          "ifNoSymptoms": "N/A"
+        },
+        "appDisplay": {
+          "screenType": "Standard treatment pathway display",
+          "button": "N/A",
+          "behavior": "Normal clinical routing"
+        }
+      },
+      "nextStepRouting": {
+        "providerSuggestion": "Follow COR 1 STRONG recommendation for BP management",
+        "followUpTiming": "Based on BP category and goal achievement: 1 year (Normal), 3-6 months (Elevated or goal met), 1 month (medication initiation)",
+        "repeatMeasurement": "Confirm BP category with repeat measurement before treatment change",
+        "navigatorEscalation": "Flag if BP goal not met after medication start for therapy intensification review",
+        "documentation": "Log BP category, risk factors, medication initiation, follow-up schedule, and goal achievement"
+      },
+      "tags": {
+        "acute": false,
+        "chronic": true,
+        "screening": true,
+        "diagnosis": true,
+        "management": true,
+        "priority": "high",
+        "topic": "hypertension_treatment"
+      }
+    }
+  }
+}

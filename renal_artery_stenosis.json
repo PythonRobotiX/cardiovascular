@@ -1,0 +1,123 @@
+{
+  "moduleTemplate": {
+    "name": "Renal_Artery_Stenosis",
+    "sections": {
+      "purpose": {
+        "clinicalProblem": {
+          "clinicalIntent": "Provide evidence-based recommendations for managing renal artery stenosis in hypertensive adults",
+          "whenToUse": "Initial diagnosis of renal artery stenosis, treatment planning, medication failure assessment, revascularization decision-making",
+          "decisionOrAction": "Medical therapy recommendation OR revascularization referral based on disease type and treatment response"
+        }
+      },
+      "userFlow": {
+        "navigationPath": [
+          { "view": "RASStartView", "purpose": "Entry point for renal artery stenosis assessment" },
+          { "view": "RASDiagnosisView", "purpose": "Confirm atherosclerotic vs nonatherosclerotic type" },
+          { "view": "MedicalHistoryView", "purpose": "Assess hypertension status and kidney function" },
+          { "view": "TreatmentFailureView", "purpose": "Evaluate medical management failure (resistant HTN, worsening kidney function, acute HF)" },
+          { "view": "RecommendationView", "purpose": "Display COR and LOE based on clinical scenario" },
+          { "view": "ReferralView", "purpose": "Generate revascularization referral if indicated" },
+          { "view": "DocumentationView", "purpose": "Log recommendation and treatment plan" }
+        ]
+      },
+      "inputDataModel": {
+        "structName": "RenalArteryStenosisInputModel",
+        "requiredFields": {
+          "stenosisType": { "type": "String?", "validation": "Must be: atherosclerotic or nonatherosclerotic" },
+          "hypertensionStatus": { "type": "String?", "validation": "hypertensive or normotensive" }
+        },
+        "optionalFields": {
+          "medicalManagementFailed": { "type": "Bool?", "options": ["true", "false"] },
+          "failureTypes": { "type": "[String]?", "options": ["resistant_hypertension", "worsening_kidney_function", "acute_heart_failure"] },
+          "hasFibromuscularDysplasia": { "type": "Bool?" }
+        },
+        "validationRules": [
+          "Stenosis type must be specified",
+          "If atherosclerotic and medical management failed, capture specific failure types",
+          "If nonatherosclerotic, confirm fibromuscular dysplasia"
+        ]
+      },
+      "logicEngine": {
+        "rules": [
+          "IF stenosisType = 'atherosclerotic' AND patient has hypertension → Class 1, LOE A: Recommend medical therapy to reduce kidney and CVD morbidity/mortality",
+          "IF stenosisType = 'atherosclerotic' AND medicalManagementFailed = true (resistant HTN, worsening kidney function, OR acute HF) → Class 2a, LOE C-EO: Reasonable to refer for revascularization (percutaneous angioplasty/stent)",
+          "IF stenosisType = 'nonatherosclerotic' (fibromuscular dysplasia) → Class 2b, LOE C-LD: May be reasonable to refer for revascularization (percutaneous angioplasty only, no stent)",
+          "Apply COR and LOE independently per ACC/AHA framework"
+        ],
+        "thresholdsExample": {
+          "categories": [
+            { 
+              "name": "Class 1", 
+              "strength": "STRONG", 
+              "loe": "A",
+              "condition": "Atherosclerotic RAS + hypertension",
+              "action": "Medical therapy",
+              "benefit": "Reduces kidney and CVD morbidity/mortality"
+            },
+            { 
+              "name": "Class 2a", 
+              "strength": "MODERATE", 
+              "loe": "C-EO",
+              "condition": "Atherosclerotic RAS + medical management failed (resistant HTN, worsening kidney function, OR acute HF)",
+              "action": "Refer for revascularization (percutaneous angioplasty/stent)",
+              "benefit": "Treatment failure rescue"
+            },
+            { 
+              "name": "Class 2b", 
+              "strength": "WEAK", 
+              "loe": "C-LD",
+              "condition": "Nonatherosclerotic RAS (fibromuscular dysplasia)",
+              "action": "Refer for revascularization (percutaneous angioplasty only)",
+              "benefit": "Blood pressure improvement potential"
+            }
+          ]
+        }
+      },
+      "outputModel": {
+        "structName": "RenalArteryStenosisOutputModel",
+        "fields": {
+          "category": { "type": "String", "description": "e.g., 'Class 1 (STRONG)'" },
+          "loe": { "type": "String", "description": "e.g., 'Level A'" },
+          "recommendation": { "type": "String", "description": "Full recommendation text" },
+          "action": { "type": "String", "description": "Specific clinical action to take" },
+          "revascularizationNeeded": { "type": "Bool" },
+          "revascularizationType": { "type": "String?", "values": ["percutaneous_angioplasty_with_stent", "percutaneous_angioplasty_only"], "condition": "if revascularizationNeeded = true" },
+          "suggestedPhrasing": { "type": "String", "description": "COR-specific phrasing from ACC/AHA" }
+        },
+        "constraints": ["deterministic", "renderable", "safe"]
+      },
+      "crisisRules": {
+        "thresholds": {
+          "sbp": "N/A - not a crisis module",
+          "dbp": "N/A"
+        },
+        "symptomsToAsk": [],
+        "escalationLogic": {
+          "ifAnySymptomPresent": "N/A",
+          "ifNoSymptoms": "N/A"
+        },
+        "appDisplay": {
+          "screenType": "Standard recommendation display",
+          "button": "N/A",
+          "behavior": "Normal routing"
+        }
+      },
+      "nextStepRouting": {
+        "providerSuggestion": "For Class 1: Initiate medical therapy; For Class 2a/2b: Refer to interventional cardiology or vascular surgery",
+        "followUpTiming": "Monitor for medical management failure (resistant HTN, kidney function decline, HF symptoms)",
+        "repeatMeasurement": "Reassess if medical management fails or new symptoms develop",
+        "navigatorEscalation": "Flag Class 2a criteria for expedited referral when medical management fails",
+        "documentation": "Log recommendation, COR/LOE, and referral status to health record"
+      },
+      "tags": {
+        "acute": false,
+        "chronic": true,
+        "screening": false,
+        "diagnosis": true,
+        "management": true,
+        "priority": "high",
+        "topic": "renal_artery_stenosis"
+      }
+    }
+  }
+}

@@ -1,0 +1,121 @@
+{
+  "moduleTemplate": {
+    "name": "Physical_Activity_Hypertension",
+    "sections": {
+      "purpose": {
+        "clinicalProblem": {
+          "clinicalIntent": "Prevent or treat elevated BP and hypertension through physical activity",
+          "whenToUse": "Adults with or without hypertension during routine care, preventive health visits, or hypertension management",
+          "decisionOrAction": "Prescribe structured exercise program (aerobic + resistance training) for BP management"
+        }
+      },
+      "userFlow": {
+        "navigationPath": [
+          { "view": "PhysicalActivityStartView", "purpose": "Entry point for physical activity recommendation" },
+          { "view": "PatientAssessmentView", "purpose": "Assess current activity level and contraindications" },
+          { "view": "ExercisePrescriptionView", "purpose": "Display structured exercise program details" },
+          { "view": "AerobicTrainingView", "purpose": "Provide aerobic exercise recommendations" },
+          { "view": "ResistanceTrainingView", "purpose": "Provide resistance training recommendations" },
+          { "view": "GoalSettingView", "purpose": "Set weekly activity goals with patient" },
+          { "view": "SafetyChecklistView", "purpose": "Review precautions and warning signs" },
+          { "view": "FollowUpScheduleView", "purpose": "Schedule follow-up for BP monitoring" }
+        ]
+      },
+      "inputDataModel": {
+        "structName": "PhysicalActivityInputModel",
+        "requiredFields": {
+          "hasHypertension": { "type": "Bool?", "validation": "true/false" },
+          "currentActivityLevel": { "type": "String?", "validation": "sedentary/minimal/moderate/active" }
+        },
+        "optionalFields": {
+          "age": { "type": "Int?", "validation": "18-100" },
+          "contraindications": { "type": "[String]?", "options": ["uncontrolled hypertension", "acute cardiac event", "unstable angina", "other"] },
+          "baselineBP": { "type": "Object?", "fields": { "systolic": "Int", "diastolic": "Int" } }
+        },
+        "validationRules": [
+          "Age must be ≥18 years",
+          "Screen for contraindications before prescribing",
+          "Baseline BP if available for tracking"
+        ]
+      },
+      "logicEngine": {
+        "rules": [
+          "Apply recommendation to all adults with or without hypertension",
+          "Prescribe structured exercise program including both aerobic exercise AND resistance training",
+          "Goal: prevent elevated BP in normotensive adults",
+          "Goal: treat hypertension in adults with diagnosed hypertension",
+          "Monitor BP response to exercise over time"
+        ],
+        "thresholdsExample": {
+          "categories": [
+            { 
+              "name": "Physical Activity Recommendation", 
+              "cor": "Class 1", 
+              "loe": "Level A",
+              "strength": "STRONG",
+              "population": "Adults with or without hypertension",
+              "intervention": "Structured exercise program (aerobic + resistance training)",
+              "outcome": "Prevent or treat elevated BP and hypertension"
+            }
+          ]
+        }
+      },
+      "outputModel": {
+        "structName": "PhysicalActivityOutputModel",
+        "fields": {
+          "category": { "type": "String", "description": "'Physical Activity for BP Management'" },
+          "cor": { "type": "String", "description": "Class 1" },
+          "loe": { "type": "String", "description": "Level A" },
+          "strength": { "type": "String", "description": "STRONG" },
+          "recommendation": { "type": "String", "description": "In adults with or without hypertension, increasing physical activity, through a structured exercise program that includes aerobic exercise and/or resistance training, is recommended to prevent or treat elevated BP and hypertension." },
+          "suggestedPhrasing": { "type": "String", "description": "Is recommended / Is indicated / Should be performed" },
+          "exercisePrescription": {
+            "type": "Object",
+            "fields": {
+              "aerobic": { "type": "String", "description": "Frequency, duration, intensity recommendations" },
+              "resistance": { "type": "String", "description": "Frequency, sets, repetitions recommendations" }
+            }
+          }
+        },
+        "constraints": ["deterministic", "renderable", "safe"]
+      },
+      "crisisRules": {
+        "thresholds": {
+          "sbp": "N/A - preventive/treatment recommendation",
+          "dbp": "N/A"
+        },
+        "symptomsToAsk": [
+          "Chest pain during exercise",
+          "Severe shortness of breath",
+          "Dizziness or lightheadedness",
+          "Irregular heartbeat"
+        ],
+        "escalationLogic": {
+          "ifAnySymptomPresent": "Stop exercise, seek medical evaluation",
+          "ifNoSymptoms": "Continue exercise program as prescribed"
+        },
+        "appDisplay": {
+          "screenType": "Standard recommendation with safety precautions",
+          "button": "Generate Exercise Prescription",
+          "behavior": "Proceed to goal setting and follow-up scheduling"
+        }
+      },
+      "nextStepRouting": {
+        "providerSuggestion": "Prescribe structured exercise program - refer to cardiac rehab or exercise physiologist if available",
+        "followUpTiming": "Reassess BP in 4-12 weeks after starting exercise program",
+        "repeatMeasurement": "Monitor BP before and after exercise sessions initially",
+        "navigatorEscalation": "Flag if patient has contraindications or develops symptoms",
+        "documentation": "Log exercise prescription and baseline BP to health record"
+      },
+      "tags": {
+        "acute": false,
+        "chronic": true,
+        "screening": false,
+        "diagnosis": false,
+        "management": true,
+        "priority": "high",
+        "topic": "physical_activity"
+      }
+    }
+  }
+}

@@ -1,0 +1,106 @@
+{
+  "moduleTemplate": {
+    "name": "Resistant_Hypertension_Aldosteronism_Screening",
+    "sections": {
+      "purpose": {
+        "clinicalProblem": {
+          "clinicalIntent": "Screen for primary aldosteronism in resistant hypertension regardless of potassium levels",
+          "whenToUse": "Adults with resistant hypertension, including those without hypokalemia",
+          "decisionOrAction": "Increase detection, diagnosis, and targeted therapy for primary aldosteronism"
+        }
+      },
+      "userFlow": {
+        "navigationPath": [
+          { "view": "ResistantHTNStartView", "purpose": "Entry point for resistant hypertension evaluation" },
+          { "view": "PatientCriteriaView", "purpose": "Confirm adult patient with resistant hypertension" },
+          { "view": "PotassiumCheckView", "purpose": "Note: screening recommended regardless of hypokalemia status" },
+          { "view": "AldosteronismScreeningView", "purpose": "Perform aldosterone-to-renin ratio or other screening test" },
+          { "view": "ResultsInterpretationView", "purpose": "Interpret screening results" },
+          { "view": "DiagnosisConfirmationView", "purpose": "Confirm primary aldosteronism with confirmatory testing" },
+          { "view": "TreatmentView", "purpose": "Initiate specific targeted therapy (mineralocorticoid antagonist or adrenalectomy)" },
+          { "view": "FollowUpView", "purpose": "Monitor BP response and treatment efficacy" }
+        ]
+      },
+      "inputDataModel": {
+        "structName": "ResistantHTN_Aldosteronism_InputModel",
+        "requiredFields": {
+          "age": { "type": "Int?", "validation": "≥18 years" },
+          "resistantHypertension": { "type": "Bool?", "validation": "True if BP uncontrolled on ≥3 meds including diuretic" }
+        },
+        "optionalFields": {
+          "potassiumLevel": { "type": "Float?", "validation": "Normal or low - screening indicated regardless" },
+          "currentMeds": { "type": "[String]?", "options": ["ACEi", "ARB", "CCB", "diuretic", "beta-blocker"] },
+          "aldosteroneReninRatio": { "type": "Float?", "validation": "Elevated >20-30 typical cutoff" }
+        },
+        "validationRules": [
+          "Age must be ≥18 years",
+          "Resistant hypertension defined as BP uncontrolled on ≥3 antihypertensives including diuretic",
+          "Do not exclude based on normokalemia"
+        ]
+      },
+      "logicEngine": {
+        "rules": [
+          "Identify adults with resistant hypertension (uncontrolled BP on ≥3 meds including diuretic)",
+          "Screen for primary aldosteronism regardless of potassium level (do not require hypokalemia)",
+          "Perform aldosterone-to-renin ratio as initial screening test",
+          "If screening positive, proceed to confirmatory testing",
+          "If confirmed, initiate specific targeted therapy (mineralocorticoid antagonist or adrenalectomy)",
+          "Goal: Increase detection rates and enable targeted treatment"
+        ],
+        "thresholdsExample": {
+          "categories": [
+            { "name": "Class 1", "strength": "STRONG", "benefit_risk": ">>>", "evidence": "B-NR" },
+            { "name": "Screening Indicated", "criteria": "Resistant hypertension", "potassiumRequirement": "None - regardless of hypokalemia" },
+            { "name": "Primary Aldosteronism Prevalence", "resistantHTN": "~20%", "generalHTN": "5-10%" }
+          ]
+        }
+      },
+      "outputModel": {
+        "structName": "ResistantHTN_Aldosteronism_OutputModel",
+        "fields": {
+          "category": { "type": "String", "description": "Class 1 Recommendation (STRONG)" },
+          "corStrength": { "type": "String", "values": ["STRONG"] },
+          "suggestedPhrasing": { "type": "String", "description": "Is recommended / Is indicated / Should be performed" },
+          "loe": { "type": "String", "description": "Level B-NR" },
+          "loeDescription": { "type": "String", "description": "Moderate-quality evidence from 1 or more well-designed nonrandomized studies, observational studies, or registry studies" },
+          "recommendation": { "type": "String", "description": "In adults with resistant hypertension, screening for primary aldosteronism is recommended regardless of whether hypokalemia is present to increase rates of detection, diagnosis, and specific targeted therapy" },
+          "screeningRecommended": { "type": "Bool", "description": "true" },
+          "requiresHypokalemia": { "type": "Bool", "description": "false - screening indicated regardless" }
+        },
+        "constraints": ["deterministic", "renderable", "safe"]
+      },
+      "crisisRules": {
+        "thresholds": {
+          "sbp": "N/A - screening recommendation, not acute crisis",
+          "dbp": "N/A"
+        },
+        "symptomsToAsk": [],
+        "escalationLogic": {
+          "ifAnySymptomPresent": "N/A",
+          "ifNoSymptoms": "N/A"
+        },
+        "appDisplay": {
+          "screenType": "Standard clinical recommendation display",
+          "button": "N/A",
+          "behavior": "Normal routing - implement screening protocol"
+        }
+      },
+      "nextStepRouting": {
+        "providerSuggestion": "Screen all adults with resistant hypertension for primary aldosteronism regardless of potassium levels",
+        "followUpTiming": "Follow up after screening results and after initiating targeted therapy",
+        "repeatMeasurement": "Repeat screening if initially negative but clinical suspicion remains high",
+        "navigatorEscalation": "Flag positive screening for confirmatory testing and specialist referral",
+        "documentation": "Document screening results, confirmatory testing, and targeted therapy initiation"
+      },
+      "tags": {
+        "acute": false,
+        "chronic": true,
+        "screening": true,
+        "diagnosis": true,
+        "management": true,
+        "priority": "high",
+        "topic": "resistant_hypertension_aldosteronism"
+      }
+    }
+  }
+}

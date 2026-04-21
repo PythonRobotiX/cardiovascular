@@ -1,0 +1,125 @@
+{
+  "moduleTemplate": {
+    "name": "BP_Patient_Preparation",
+    "sections": {
+      "purpose": {
+        "clinicalProblem": {
+          "clinicalIntent": "Standardized patient preparation protocol to ensure accurate, reproducible blood pressure measurements",
+          "whenToUse": "Before every BP measurement (initial visit, medication adjustment, symptom check, home monitoring)",
+          "decisionOrAction": "Patient readiness confirmation + proper positioning checklist before BP reading"
+        }
+      },
+      "userFlow": {
+        "navigationPath": [
+          { "view": "BPPrepStartView", "purpose": "Entry point - initiate preparation protocol" },
+          { "view": "PreMeasurementChecklistView", "purpose": "Verify no smoking, caffeine, or exercise within 30 minutes" },
+          { "view": "EnvironmentSetupView", "purpose": "Ensure quiet room, comfortable temperature, private area" },
+          { "view": "CuffPlacementView", "purpose": "Interactive guide for proper cuff placement on bare arm" },
+          { "view": "ArmPositioningView", "purpose": "Ensure arm supported at heart level" },
+          { "view": "BodyPositioningView", "purpose": "Verify chair position: feet flat, legs uncrossed, back supported" },
+          { "view": "RestTimerView", "purpose": "5-minute rest countdown in correct position" },
+          { "view": "ReadinessConfirmationView", "purpose": "Final check before proceeding to measurement" }
+        ]
+      },
+      "inputDataModel": {
+        "structName": "BP_Preparation_InputModel",
+        "requiredFields": {
+          "smokingWithin30min": { "type": "Bool?", "validation": "Must be false to proceed" },
+          "caffeineWithin30min": { "type": "Bool?", "validation": "Must be false to proceed" },
+          "exerciseWithin30min": { "type": "Bool?", "validation": "Must be false to proceed" },
+          "armBare": { "type": "Bool?", "validation": "Must be true (no clothing on cuff arm)" },
+          "armSupportedAtHeartLevel": { "type": "Bool?", "validation": "Must be true" },
+          "feetFlatOnFloor": { "type": "Bool?", "validation": "Must be true" },
+          "legsUncrossed": { "type": "Bool?", "validation": "Must be true" },
+          "backSupported": { "type": "Bool?", "validation": "Must be true" },
+          "rested5Minutes": { "type": "Bool?", "validation": "Must be true" }
+        },
+        "optionalFields": {
+          "cuffSize": { "type": "String?", "options": ["small", "standard", "large", "extra large"], "note": "Bladder length 80% of arm circumference, width 40%" },
+          "armSelected": { "type": "String?", "options": ["left", "right", "both"] },
+          "bladderPosition": { "type": "String?", "options": ["over brachial artery", "incorrect"] }
+        },
+        "validationRules": [
+          "All required fields must be true before proceeding",
+          "If any pre-measurement activity (smoking/caffeine/exercise) within 30min → delay measurement or reschedule",
+          "Cuff must be on bare arm (no clothing, rolled sleeves)",
+          "Bottom of cuff directly above antecubital fossa (elbow bend)",
+          "Arm supported at heart level (mid-sternum)",
+          "Minimum 5 minutes rest in correct position"
+        ]
+      },
+      "logicEngine": {
+        "rules": [
+          "Check smoking, caffeine, exercise within 30 minutes → if yes, flag and recommend waiting 30 minutes",
+          "Verify cuff placement: bare arm, bottom of cuff 1-2 cm above elbow crease",
+          "Verify arm positioning: supported (on table or pillow), mid-sternum level",
+          "Verify body positioning: seated, back supported, legs uncrossed, feet flat",
+          "If positioning incorrect → show correction instructions",
+          "Start 5-minute rest timer only when all positioning criteria met",
+          "After 5 minutes, confirm patient still in correct position",
+          "All criteria met → ready for BP measurement"
+        ],
+        "thresholdsExample": {
+          "preMeasurementRestrictions": [
+            { "activity": "Smoking", "timeWindow": "30 minutes", "actionIfViolated": "Wait 30 minutes or reschedule" },
+            { "activity": "Caffeine", "timeWindow": "30 minutes", "actionIfViolated": "Wait 30 minutes or reschedule" },
+            { "activity": "Exercise", "timeWindow": "30 minutes", "actionIfViolated": "Wait 30 minutes or reschedule" }
+          ],
+          "positioningRequirements": [
+            { "element": "Cuff placement", "requirement": "Bare arm", "instruction": "Remove clothing from upper arm" },
+            { "element": "Cuff placement", "requirement": "Bottom of cuff directly above elbow bend", "instruction": "Position cuff 1-2 cm above antecubital fossa" },
+            { "element": "Arm support", "requirement": "Supported at heart level", "instruction": "Rest arm on table or pillow at mid-sternum height" },
+            { "element": "Feet", "requirement": "Flat on floor", "instruction": "Both feet planted firmly" },
+            { "element": "Legs", "requirement": "Uncrossed", "instruction": "Keep legs uncrossed throughout rest and measurement" },
+            { "element": "Back", "requirement": "Supported", "instruction": "Sit back in chair, not on edge" },
+            { "element": "Rest duration", "requirement": "Minimum 5 minutes", "instruction": "Remain seated and relaxed" }
+          ]
+        }
+      },
+      "outputModel": {
+        "structName": "BP_Preparation_OutputModel",
+        "fields": {
+          "category": { "type": "String", "description": "e.g., 'Ready for measurement' or 'Not ready - action needed'" },
+          "readyForMeasurement": { "type": "Bool" },
+          "blockingFactors": { "type": "[String]", "description": "List of unmet criteria preventing measurement" },
+          "correctionInstructions": { "type": "[String]", "description": "Specific actions to resolve blocking factors" },
+          "restTimerCompleted": { "type": "Bool" },
+          "totalPreparationTime": { "type": "Int", "unit": "seconds", "description": "Time from start to readiness" }
+        },
+        "constraints": ["deterministic", "renderable", "safe"]
+      },
+      "crisisRules": {
+        "thresholds": {
+          "sbp": "N/A - preparation module only",
+          "dbp": "N/A"
+        },
+        "symptomsToAsk": [],
+        "escalationLogic": {
+          "ifAnySymptomPresent": "N/A",
+          "ifNoSymptoms": "N/A"
+        },
+        "appDisplay": {
+          "screenType": "Preparation checklist with visual aids",
+          "button": "Proceed to BP measurement (only when ready)",
+          "behavior": "Cannot bypass preparation requirements"
+        }
+      },
+      "nextStepRouting": {
+        "providerSuggestion": "Ensure all preparation steps documented before accepting BP reading",
+        "followUpTiming": "N/A - preparation is immediate before measurement",
+        "repeatMeasurement": "If patient unable to complete preparation (e.g., can't rest 5 minutes), document and consider alternate approach",
+        "navigatorEscalation": "If patient repeatedly cannot meet preparation criteria, flag for workflow adjustment",
+        "documentation": "Log preparation completion status with each BP measurement"
+      },
+      "tags": {
+        "acute": false,
+        "chronic": true,
+        "screening": true,
+        "diagnosis": true,
+        "management": true,
+        "priority": "high",
+        "topic": "blood_pressure_measurement"
+      }
+    }
+  }
+}

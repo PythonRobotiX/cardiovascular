@@ -1,0 +1,115 @@
+{
+  "moduleTemplate": {
+    "name": "HBPM_Measurement_Guide",
+    "sections": {
+      "purpose": {
+        "clinicalProblem": {
+          "clinicalIntent": "Standardized home blood pressure monitoring protocol to obtain accurate, actionable readings for hypertension diagnosis and management",
+          "whenToUse": "Pre-appointment preparation, initial hypertension diagnosis, medication adjustment monitoring, remote patient monitoring",
+          "decisionOrAction": "Generate validated BP readings + documentation for clinical decision-making"
+        }
+      },
+      "userFlow": {
+        "navigationPath": [
+          { "view": "HBPMStartView", "purpose": "Entry point for HBPM protocol" },
+          { "view": "HBPMInstructionsView", "purpose": "Display measurement rules (no talking, phone, TV)" },
+          { "view": "HBPMFrequencyView", "purpose": "Show 2 readings, 1 min apart, twice daily" },
+          { "view": "HBPMTimingView", "purpose": "Explain morning (post-void, pre-meds, pre-meal) + bedtime readings" },
+          { "view": "HBPMDurationView", "purpose": "Set 3-7 day measurement period" },
+          { "view": "HBPMDocumentationView", "purpose": "Guide for written or electronic logging" },
+          { "view": "HBPMSharingView", "purpose": "Instructions for sharing with clinician" },
+          { "view": "HBPMConfirmationView", "purpose": "Confirm protocol understanding and completion" }
+        ]
+      },
+      "inputDataModel": {
+        "structName": "HBPM_InputModel",
+        "requiredFields": {
+          "morningReading1": { "type": "Int?", "validation": "Valid BP reading" },
+          "morningReading2": { "type": "Int?", "validation": "Taken 1 min after reading 1" },
+          "eveningReading1": { "type": "Int?", "validation": "Valid BP reading" },
+          "eveningReading2": { "type": "Int?", "validation": "Taken 1 min after reading 1" },
+          "measurementDate": { "type": "String?", "validation": "YYYY-MM-DD" }
+        },
+        "optionalFields": {
+          "dayNumber": { "type": "Int?", "options": ["1", "2", "3", "4", "5", "6", "7"] },
+          "measurementWeek": { "type": "String?", "options": ["Week 1", "Week 2"] }
+        },
+        "validationRules": [
+          "Readings must be taken 1 minute apart",
+          "Morning readings: after bladder emptying, before medication, before eating",
+          "Bedtime readings: before sleep",
+          "Minimum 3 days, preferred 7 days of measurements",
+          "No talking, phone use, or TV during measurement"
+        ]
+      },
+      "logicEngine": {
+        "rules": [
+          "Enforce quiet environment (no talking, phone, TV) during measurement",
+          "Validate 2 readings taken 1 minute apart per session",
+          "Verify morning timing: post-void, pre-medication, pre-meal",
+          "Verify bedtime timing: before sleep",
+          "Track measurement days (minimum 3, preferred 7)",
+          "Flag incomplete or improperly timed readings",
+          "Calculate average of readings if complete",
+          "Generate documentation for clinician sharing"
+        ],
+        "thresholdsExample": {
+          "categories": [
+            { "name": "Complete Protocol", "sbp": "N/A", "dbp": "N/A", "operator": "N/A", "requirement": "7 days, 2 readings AM + 2 readings PM, properly timed" },
+            { "name": "Minimum Protocol", "sbp": "N/A", "dbp": "N/A", "operator": "N/A", "requirement": "3 days minimum" },
+            { "name": "Incomplete Protocol", "sbp": "N/A", "dbp": "N/A", "operator": "N/A", "requirement": "<3 days or missing readings or improper timing" }
+          ]
+        }
+      },
+      "outputModel": {
+        "structName": "HBPM_OutputModel",
+        "fields": {
+          "category": { "type": "String", "description": "e.g., 'Complete Protocol (7 days)'" },
+          "consistency": { "type": "String?", "values": ["complete", "minimum", "incomplete"] },
+          "recommendedNextStep": { "type": "String", "description": "e.g., 'Share readings with clinician' or 'Continue monitoring to reach 7 days'" },
+          "crisis": { "type": "Bool", "description": "false for HBPM protocol only (actual BP values determine crisis)" },
+          "crisisSymptoms": { "type": "[String]?", "condition": "if crisis == true" }
+        },
+        "constraints": ["deterministic", "renderable", "safe"]
+      },
+      "crisisRules": {
+        "thresholds": {
+          "sbp": "≥180 (if measured)",
+          "dbp": "≥120 (if measured)"
+        },
+        "symptomsToAsk": [
+          "Severe headache",
+          "Chest pain",
+          "Shortness of breath",
+          "Vision changes",
+          "Weakness or numbness"
+        ],
+        "escalationLogic": {
+          "ifAnySymptomPresent": "Stop HBPM protocol → recommend ER immediately",
+          "ifNoSymptoms": "Complete current reading → flag for clinician review → continue protocol"
+        },
+        "appDisplay": {
+          "screenType": "Standard HBPM with crisis alert overlay if thresholds met",
+          "button": "Call 911 if symptoms present",
+          "behavior": "Prioritize crisis routing over HBPM completion if thresholds + symptoms"
+        }
+      },
+      "nextStepRouting": {
+        "providerSuggestion": "Share documented HBPM readings with clinician before or during appointment",
+        "followUpTiming": "Repeat 3-7 day HBPM protocol every 3-6 months or as directed by clinician",
+        "repeatMeasurement": "If incomplete protocol (<3 days or improper timing), restart 3-7 day protocol",
+        "navigatorEscalation": "If crisis thresholds met + symptoms, escalate to care team immediately",
+        "documentation": "Log all readings, dates, times, and protocol completion status to health record"
+      },
+      "tags": {
+        "acute": false,
+        "chronic": true,
+        "screening": true,
+        "diagnosis": true,
+        "management": true,
+        "priority": "medium",
+        "topic": "hypertension_monitoring"
+      }
+    }
+  }
+}

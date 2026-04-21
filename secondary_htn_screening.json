@@ -1,0 +1,123 @@
+{
+  "moduleTemplate": {
+    "name": "Secondary_Hypertension_Screening",
+    "sections": {
+      "purpose": {
+        "clinicalProblem": {
+          "clinicalIntent": "Identify clinical features that suggest underlying secondary causes of hypertension",
+          "whenToUse": "Initial hypertension evaluation, medication-resistant hypertension, atypical presentation",
+          "decisionOrAction": "Determine need for secondary hypertension screening + referral pathway"
+        }
+      },
+      "userFlow": {
+        "navigationPath": [
+          { "view": "SecondaryHTNStartView", "purpose": "Entry point for secondary hypertension screening" },
+          { "view": "RiskFactorsListView", "purpose": "Display checklist of 12 secondary HTN features" },
+          { "view": "FeatureSelectionView", "purpose": "User selects which features apply to patient" },
+          { "view": "DecisionLogicView", "purpose": "Process YES/NO based on feature presence" },
+          { "view": "PrimaryAldosteronismScreenView", "purpose": "If YES → initiate screening pathway" },
+          { "view": "ScreeningTestResultView", "purpose": "If NO → determine screening test result" },
+          { "view": "ReferralView", "purpose": "If positive screening test → refer to specialist" },
+          { "view": "MedicationEnhancementView", "purpose": "If negative screening test → enhance medication therapy" }
+        ]
+      },
+      "inputDataModel": {
+        "structName": "SecondaryHTNScreeningInputModel",
+        "requiredFields": {
+          "hasSecondaryFeatures": { "type": "Bool?", "validation": "true/false based on checklist" }
+        },
+        "optionalFields": {
+          "selectedFeatures": { "type": "[String]?", "options": [
+            "Drug-resistant/induced HTN",
+            "Abrupt onset of HTN",
+            "Onset of HTN at <30 y",
+            "Exacerbation of previously controlled HTN",
+            "Disproportionate TOD for degree of HTN",
+            "Accelerated/malignant HTN",
+            "Onset of diastolic HTN in older adults (age ≥65 y)",
+            "Unprovoked or excessive hypokalemia",
+            "Insomnia or daytime sleepiness",
+            "Concomitant adrenal nodule",
+            "History of early-onset stroke",
+            "Family history of primary aldosteronism"
+          ] },
+          "screeningTestResult": { "type": "String?", "options": ["positive", "negative"] }
+        },
+        "validationRules": [
+          "At least one feature required if hasSecondaryFeatures == true",
+          "Screening test result required only if hasSecondaryFeatures == false"
+        ]
+      },
+      "logicEngine": {
+        "rules": [
+          "Check patient against 12 secondary HTN features",
+          "If ANY feature present → hasSecondaryFeatures = YES",
+          "If NO features present → hasSecondaryFeatures = NO",
+          "If YES → Screen for primary aldosteronism and other secondary forms of HTN",
+          "If NO → Check screening test result",
+          "If screening test positive → Refer to clinician with secondary HTN expertise",
+          "If screening test negative → Enhance medication therapy"
+        ],
+        "thresholdsExample": {
+          "decisionPath": [
+            { "condition": "Any feature present", "action": "Screen for primary aldosteronism + other secondary forms" },
+            { "condition": "No features present AND screening test positive", "action": "Refer to secondary HTN specialist" },
+            { "condition": "No features present AND screening test negative", "action": "Enhance medication therapy" }
+          ],
+          "highRiskFeatures": [
+            "Onset <30 years",
+            "Accelerated/malignant HTN",
+            "History of early-onset stroke",
+            "Family history of primary aldosteronism"
+          ]
+        }
+      },
+      "outputModel": {
+        "structName": "SecondaryHTNScreeningOutputModel",
+        "fields": {
+          "category": { "type": "String", "description": "e.g., 'High Risk for Secondary HTN' / 'Low Risk for Secondary HTN'" },
+          "hasSecondaryFeatures": { "type": "Bool", "description": "true if any feature present" },
+          "positiveFeatures": { "type": "[String]", "description": "List of selected features" },
+          "recommendedNextStep": { "type": "String", "description": "Screening pathway or referral or medication enhancement" },
+          "requiresSpecialistReferral": { "type": "Bool", "description": "true if screening test positive" },
+          "screeningNeeded": { "type": "Bool", "description": "true if features present" }
+        },
+        "constraints": ["deterministic", "renderable", "safe"]
+      },
+      "crisisRules": {
+        "thresholds": {
+          "sbp": "N/A",
+          "dbp": "N/A"
+        },
+        "symptomsToAsk": [
+          "Accelerated/malignant HTN features"
+        ],
+        "escalationLogic": {
+          "ifAnySymptomPresent": "Urgent referral for secondary HTN evaluation",
+          "ifNoSymptoms": "Proceed with standard screening pathway"
+        },
+        "appDisplay": {
+          "screenType": "Standard screening display",
+          "button": "N/A",
+          "behavior": "Normal routing unless malignant HTN"
+        }
+      },
+      "nextStepRouting": {
+        "providerSuggestion": "Refer to hypertension specialist if screening test positive or multiple high-risk features present",
+        "followUpTiming": "Repeat screening annually or if treatment resistance develops",
+        "repeatMeasurement": "Confirm medication adherence before labeling drug-resistant",
+        "navigatorEscalation": "Flag early-onset (<30 y) or malignant HTN for expedited review",
+        "documentation": "Log selected features and screening pathway decision to health record"
+      },
+      "tags": {
+        "acute": false,
+        "chronic": true,
+        "screening": true,
+        "diagnosis": true,
+        "management": false,
+        "priority": "high",
+        "topic": "secondary_hypertension"
+      }
+    }
+  }
+}

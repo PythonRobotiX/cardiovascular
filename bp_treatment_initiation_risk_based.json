@@ -1,0 +1,112 @@
+{
+  "moduleTemplate": {
+    "name": "BP_Treatment_Initiation_Risk_Based",
+    "sections": {
+      "purpose": {
+        "clinicalProblem": {
+          "clinicalIntent": "Determine BP treatment initiation thresholds based on cardiovascular risk factors",
+          "whenToUse": "Initial BP assessment, treatment decision point for hypertension management",
+          "decisionOrAction": "Treatment initiation recommendation with BP threshold (130/80 vs 140/90) based on risk profile"
+        }
+      },
+      "userFlow": {
+        "navigationPath": [
+          { "view": "BPInitiationStartView", "purpose": "Entry point for treatment decision" },
+          { "view": "BPAverageView", "purpose": "Input average BP measurement" },
+          { "view": "CVDHistoryView", "purpose": "Ask about existing clinical CVD (CHD, stroke, HF)" },
+          { "view": "RiskFactorsView", "purpose": "Ask about diabetes, CKD, or calculate PREVENT-CVD risk" },
+          { "view": "RiskClassificationView", "purpose": "Determine if patient meets high-risk criteria" },
+          { "view": "ThresholdDecisionView", "purpose": "Apply appropriate BP threshold (130/80 vs 140/90)" },
+          { "view": "TreatmentRecommendationView", "purpose": "Display treatment initiation decision" },
+          { "view": "FirstLineTherapyView", "purpose": "Show medication class recommendations" }
+        ]
+      },
+      "inputDataModel": {
+        "structName": "BPTreatmentInitiationInputModel",
+        "requiredFields": {
+          "averageSystolic": { "type": "Int?", "validation": "70-250" },
+          "averageDiastolic": { "type": "Int?", "validation": "40-150" }
+        },
+        "optionalFields": {
+          "hasClinicalCVD": { "type": "Bool?", "description": "CHD, stroke, or HF" },
+          "hasDiabetes": { "type": "Bool?" },
+          "hasCKD": { "type": "Bool?" },
+          "preventCvdRisk": { "type": "Double?", "validation": "0-100", "description": "10-year PREVENT-CVD risk percentage" }
+        },
+        "validationRules": [
+          "systolic: 70-250",
+          "diastolic: 40-150",
+          "systolic >= diastolic",
+          "PREVENT-CVD risk if provided: 0-100"
+        ]
+      },
+      "logicEngine": {
+        "rules": [
+          "Check if average BP ≥140/90 mm Hg",
+          "If NO at BP level-only, proceed to risk-based assessment",
+          "Check for existing clinical CVD (CHD, stroke, HF)",
+          "Check for diabetes, CKD, or 10-year PREVENT-CVD risk ≥7.5%",
+          "IF (clinical CVD present) OR (diabetes OR CKD OR PREVENT-CVD ≥7.5%) → High-risk patient",
+          "High-risk patients: Initiate treatment if SBP ≥130 OR DBP ≥80 (secondary prevention)",
+          "Non-high-risk patients: Initiate treatment only if BP ≥140/90 (primary prevention)",
+          "First-line therapy: thiazide diuretics, CCB, ACEi, or ARB"
+        ],
+        "thresholdsExample": {
+          "decisionTree": [
+            { "node": "Step 1 - BP Level Only", "condition": "Average BP ≥140/90?", "ifYes": "Initiate treatment", "ifNo": "Proceed to risk-based assessment" },
+            { "node": "Step 2 - Clinical CVD", "condition": "Has CHD, stroke, or HF?", "ifYes": "High-risk → 130/80 threshold", "ifNo": "Proceed to Step 3" },
+            { "node": "Step 3 - Other Risk Factors", "condition": "Diabetes OR CKD OR PREVENT-CVD ≥7.5%?", "ifYes": "High-risk → 130/80 threshold", "ifNo": "Low-risk → 140/90 threshold" }
+          ],
+          "bpThresholds": {
+            "highRisk": { "sbp": "≥130", "dbp": "≥80", "clinicalIntent": "Secondary prevention of CVD" },
+            "lowRisk": { "sbp": "≥140", "dbp": "≥90", "clinicalIntent": "Primary prevention of CVD" }
+          }
+        }
+      },
+      "outputModel": {
+        "structName": "BPTreatmentInitiationOutputModel",
+        "fields": {
+          "category": { "type": "String", "description": "'Initiate treatment' or 'Do not initiate treatment'" },
+          "bpThresholdUsed": { "type": "String", "values": ["130/80", "140/90"] },
+          "preventionType": { "type": "String", "values": ["primary", "secondary"] },
+          "patientRiskLevel": { "type": "String", "values": ["high", "low"] },
+          "firstLineTherapy": { "type": "[String]", "description": "List of recommended medication classes" },
+          "recommendedNextStep": { "type": "String" }
+        },
+        "constraints": ["deterministic", "renderable", "safe"]
+      },
+      "crisisRules": {
+        "thresholds": {
+          "sbp": "N/A - not a crisis module",
+          "dbp": "N/A"
+        },
+        "symptomsToAsk": [],
+        "escalationLogic": {
+          "ifAnySymptomPresent": "N/A",
+          "ifNoSymptoms": "N/A"
+        },
+        "appDisplay": {
+          "screenType": "Standard clinical decision support",
+          "button": "N/A",
+          "behavior": "Normal routing"
+        }
+      },
+      "nextStepRouting": {
+        "providerSuggestion": "Initiate antihypertensive medication as recommended",
+        "followUpTiming": "Follow up in 4 weeks to assess response",
+        "repeatMeasurement": "Confirm with HBPM before treatment initiation",
+        "navigatorEscalation": "Flag high-risk patients for care team notification",
+        "documentation": "Log treatment decision and risk factors to health record"
+      },
+      "tags": {
+        "acute": false,
+        "chronic": true,
+        "screening": false,
+        "diagnosis": true,
+        "management": true,
+        "priority": "high",
+        "topic": "hypertension_treatment"
+      }
+    }
+  }
+}

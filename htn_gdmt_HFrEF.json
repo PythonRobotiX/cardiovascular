@@ -1,0 +1,141 @@
+{
+  "moduleTemplate": {
+    "name": "GDMT_HFrEF_Hypertension",
+    "sections": {
+      "purpose": {
+        "clinicalProblem": {
+          "clinicalIntent": "Guideline-directed medical therapy for patients with comorbid Hypertension and Heart Failure with reduced Ejection Fraction",
+          "whenToUse": "HFrEF diagnosis with NYHA class II-IV symptoms, regardless of hypertension status",
+          "decisionOrAction": "Recommendation of 4 foundational drug classes (BB, MRA, RAASi/ARNi, SGLT2i) plus adjunctive therapy"
+        }
+      },
+      "userFlow": {
+        "navigationPath": [
+          { "view": "GDMTStartView", "purpose": "Entry point for GDMT recommendation engine" },
+          { "view": "HFrEFConfirmationView", "purpose": "Confirm HFrEF diagnosis and NYHA class" },
+          { "view": "LabResultsView", "purpose": "Input eGFR and potassium levels for MRA eligibility" },
+          { "view": "DiabetesStatusView", "purpose": "Check type 2 diabetes status for SGLT2i" },
+          { "view": "RaceEthnicityView", "purpose": "Determine if patient self-identifies as Black for hydralazine/ISDN" },
+          { "view": "DrugIntoleranceView", "purpose": "Assess intolerance to first-line agents (ARNi, ACEi, ARB)" },
+          { "view": "GDMTRecommendationView", "purpose": "Display personalized GDMT regimen" },
+          { "view": "MedicationOrderingView", "purpose": "Generate prescriptions and monitoring plan" }
+        ]
+      },
+      "inputDataModel": {
+        "structName": "GDMT_HFrEF_InputModel",
+        "requiredFields": {
+          "hf diagnosis": { "type": "String?", "validation": "Must be HFrEF" },
+          "nyhaClass": { "type": "String?", "validation": "II, III, or IV" }
+        },
+        "optionalFields": {
+          "egfr": { "type": "Int?", "validation": "mL/min/1.73m², threshold >30 for MRA" },
+          "potassium": { "type": "Float?", "validation": "mEq/L, threshold <5.0 for MRA" },
+          "type2Diabetes": { "type": "Bool?" },
+          "selfIdentifiedBlack": { "type": "Bool?" },
+          "firstLineIntolerance": { "type": "Bool?", "description": "Intolerance to ARNi, ACEi, or ARB" },
+          "renalInsufficiency": { "type": "Bool?" },
+          "symptomatic": { "type": "Bool?" }
+        },
+        "validationRules": [
+          "HFrEF diagnosis required",
+          "eGFR >30 for MRA recommendation",
+          "Potassium <5.0 for MRA recommendation",
+          "NYHA class II-III for ARNi preference over ACEi/ARB"
+        ]
+      },
+      "logicEngine": {
+        "rules": [
+          "Rule 1: Beta-blocker (BB) - Recommend bisoprolol, carvedilol, or metoprolol succinate for all HFrEF patients, even if asymptomatic",
+          "Rule 2: MRA - Recommend spironolactone or eplerenone if symptomatic HFrEF AND eGFR >30 AND potassium <5.0",
+          "Rule 3: RAASi/ARNi - For NYHA II-III, ARNi preferred over ACEi/ARB. If ARNi not feasible, use ACEi or ARB",
+          "Rule 4: SGLT2i - Recommend for symptomatic HFrEF regardless of diabetes status",
+          "Rule 5: Hydralazine/ISDN - For Black patients with NYHA III-IV on optimal therapy, OR for any patient with intolerance to first-line agents",
+          "Rule 6: All 4 foundational classes (BB + MRA + RAASi/ARNi + SGLT2i) should be considered as GDMT"
+        ],
+        "thresholdsExample": {
+          "drugClasses": [
+            { 
+              "class": "BB", 
+              "priority": "First-line", 
+              "condition": "All HFrEF patients, even asymptomatic",
+              "specificAgents": ["bisoprolol", "carvedilol", "metoprolol succinate"],
+              "benefit": "Reduces mortality and hospitalizations"
+            },
+            { 
+              "class": "MRA", 
+              "priority": "First-line", 
+              "condition": "Symptomatic HFrEF AND eGFR >30 AND K+ <5.0",
+              "specificAgents": ["spironolactone", "eplerenone"],
+              "benefit": "Reduces morbidity and mortality"
+            },
+            { 
+              "class": "RAASi/ARNi", 
+              "priority": "First-line", 
+              "condition": "HFrEF with NYHA II-III - ARNi preferred",
+              "specificAgents": ["ARNi (sacubitril/valsartan)", "ACEi", "ARB"],
+              "benefit": "Reduces morbidity and mortality"
+            },
+            { 
+              "class": "SGLT2i", 
+              "priority": "First-line", 
+              "condition": "Symptomatic HFrEF, regardless of diabetes",
+              "specificAgents": ["empagliflozin", "dapagliflozin", "other SGLT2i"],
+              "benefit": "Reduces hospitalization and CV mortality"
+            },
+            { 
+              "class": "Hydralazine + ISDN", 
+              "priority": "Adjunctive", 
+              "condition": "Black patients with NYHA III-IV on optimal therapy OR patients with intolerance to first-line agents",
+              "specificAgents": ["hydralazine", "isosorbide dinitrate"],
+              "benefit": "Improves symptoms, reduces morbidity and mortality"
+            }
+          ]
+        }
+      },
+      "outputModel": {
+        "structName": "GDMT_HFrEF_OutputModel",
+        "fields": {
+          "category": { "type": "String", "description": "e.g., 'GDMT for HFrEF with Hypertension'" },
+          "recommendedDrugClasses": { "type": "[String]", "description": "Array of drug classes to prescribe" },
+          "specificAgents": { "type": "[String]", "description": "Specific medication names" },
+          "priorityOrder": { "type": "[String]", "description": "Order of addition if not on all agents" },
+          "conditionalRecommendations": { "type": "[String]?", "description": "e.g., Hydralazine/ISDN based on race or intolerance" },
+          "monitoringRequired": { "type": "[String]", "description": "eGFR, potassium, BP, symptoms" }
+        },
+        "constraints": ["deterministic", "renderable", "safe", "actionable"]
+      },
+      "crisisRules": {
+        "thresholds": {
+          "sbp": "N/A - Not a crisis module",
+          "dbp": "N/A"
+        },
+        "symptomsToAsk": [],
+        "escalationLogic": {
+          "ifAnySymptomPresent": "N/A - Medication recommendation module",
+          "ifNoSymptoms": "N/A"
+        },
+        "appDisplay": {
+          "screenType": "Standard recommendation display",
+          "button": "N/A",
+          "behavior": "Normal routing to prescribing workflow"
+        }
+      },
+      "nextStepRouting": {
+        "providerSuggestion": "Start with BB + RAASi/ARNi, add MRA and SGLT2i based on eligibility, consider hydralazine/ISDN for specific populations",
+        "followUpTiming": "Recheck eGFR and potassium within 2-4 weeks of MRA initiation, monitor BP and symptoms monthly",
+        "repeatMeasurement": "Reassess NYHA class every 3-6 months, recheck renal function quarterly",
+        "navigatorEscalation": "Alert if patient qualifies for SGLT2i or ARNi but not prescribed",
+        "documentation": "Log all GDMT agents prescribed, reasons for omission if any"
+      },
+      "tags": {
+        "acute": false,
+        "chronic": true,
+        "screening": false,
+        "diagnosis": false,
+        "management": true,
+        "priority": "high",
+        "topic": "heart_failure"
+      }
+    }
+  }
+}

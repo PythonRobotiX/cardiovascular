@@ -1,0 +1,109 @@
+{
+  "moduleTemplate": {
+    "name": "WhiteCoat_Hypertension_Screening",
+    "sections": {
+      "purpose": {
+        "clinicalProblem": {
+          "clinicalIntent": "Exclude white-coat hypertension using out-of-office BP monitoring before diagnosing hypertension",
+          "whenToUse": "Adults with untreated office SBP 130-159 mmHg or DBP 80-99 mmHg (excluding SBP ≥160 or DBP ≥100)",
+          "decisionOrAction": "Out-of-office BP monitoring recommendation with COR 2a + LOE B-NR"
+        }
+      },
+      "userFlow": {
+        "navigationPath": [
+          { "view": "BPStartView", "purpose": "Entry point for BP assessment" },
+          { "view": "OfficeBPInputView", "purpose": "Record office SBP and DBP values" },
+          { "view": "BPThresholdCheckView", "purpose": "Check if SBP 130-159 or DBP 80-99 (exclude ≥160/≥100)" },
+          { "view": "RecommendationDisplayView", "purpose": "Show COR 2a recommendation for out-of-office monitoring" },
+          { "view": "OutOfOfficeSetupView", "purpose": "Provide instructions for ambulatory or home BP monitoring" },
+          { "view": "MonitoringInstructionsView", "purpose": "Display proper monitoring protocol" },
+          { "view": "FollowUpScheduleView", "purpose": "Schedule repeat assessment after out-of-office data collection" },
+          { "view": "DiagnosisDecisionView", "purpose": "Compare office vs out-of-office readings for final diagnosis" }
+        ]
+      },
+      "inputDataModel": {
+        "structName": "WhiteCoatScreeningInputModel",
+        "requiredFields": {
+          "officeSystolic": { "type": "Int?", "validation": "70-250" },
+          "officeDiastolic": { "type": "Int?", "validation": "40-150" }
+        },
+        "optionalFields": {
+          "previousDiagnosis": { "type": "String?", "options": ["none", "hypertension", "white-coat"] },
+          "antihypertensiveMeds": { "type": "Bool?" },
+          "outOfOfficeReadings": { "type": "[[String:Int]]?", "description": "Array of home/ambulatory readings" }
+        },
+        "validationRules": [
+          "officeSystolic: 130-159 OR officeDiastolic: 80-99",
+          "Exclude if officeSystolic ≥160 OR officeDiastolic ≥100",
+          "Patient must be untreated (no antihypertensive meds)"
+        ]
+      },
+      "logicEngine": {
+        "rules": [
+          "Check if office SBP between 130-159 mmHg OR DBP between 80-99 mmHg",
+          "Verify office SBP is NOT ≥160 mmHg AND DBP is NOT ≥100 mmHg",
+          "Confirm patient is not on antihypertensive medication",
+          "If criteria met → recommend out-of-office BP monitoring (COR 2a, LOE B-NR)",
+          "Out-of-office options: ambulatory BP monitoring (ABPM) or home BP monitoring (HBPM)",
+          "Compare office readings with out-of-office averages",
+          "If office elevated but out-of-office normal → diagnose white-coat hypertension",
+          "If both elevated → diagnose sustained hypertension"
+        ],
+        "thresholdsExample": {
+          "categories": [
+            { "name": "Office BP Range", "sbp": "130-159", "dbp": "80-99", "action": "Consider out-of-office monitoring" },
+            { "name": "Exclusion Criteria", "sbp": "≥160", "dbp": "≥100", "action": "Proceed directly to hypertension diagnosis" },
+            { "name": "White-Coat Hypertension", "office": "elevated", "outOfOffice": "normal", "diagnosis": "White-coat hypertension" },
+            { "name": "Sustained Hypertension", "office": "elevated", "outOfOffice": "elevated", "diagnosis": "Sustained hypertension" }
+          ]
+        }
+      },
+      "outputModel": {
+        "structName": "WhiteCoatScreeningOutputModel",
+        "fields": {
+          "category": { "type": "String", "description": "e.g., 'White-Coat Hypertension' or 'Sustained Hypertension'" },
+          "cor": { "type": "String", "description": "Class 2a" },
+          "loe": { "type": "String", "description": "B-NR" },
+          "recommendation": { "type": "String", "description": "It is reasonable to exclude white-coat hypertension using out-of-office BP monitoring before diagnosis" },
+          "suggestedPhrasing": { "type": "String", "values": ["Is reasonable", "Can be useful/effective/beneficial"] },
+          "outOfOfficeRequired": { "type": "Bool" },
+          "monitoringType": { "type": "String?", "options": ["ABPM", "HBPM"] },
+          "finalDiagnosis": { "type": "String" }
+        },
+        "constraints": ["deterministic", "renderable", "safe"]
+      },
+      "crisisRules": {
+        "thresholds": {
+          "sbp": "N/A for this screening recommendation",
+          "dbp": "N/A for this screening recommendation"
+        },
+        "symptomsToAsk": [],
+        "escalationLogic": {
+          "ifAnySymptomPresent": "N/A - screening protocol only",
+          "ifNoSymptoms": "N/A"
+        },
+        "appDisplay": {
+          "screenType": "Standard recommendation display",
+          "button": "N/A",
+          "behavior": "Normal routing for out-of-office monitoring"
+        }
+      },
+      "nextStepRouting": {
+        "providerSuggestion": "Order ambulatory BP monitoring or provide home BP monitoring instructions",
+        "followUpTiming": "Repeat assessment after 7-14 days of out-of-office monitoring",
+        "repeatMeasurement": "Compare office reading with out-of-office average (typically 2-3 readings per day for 7 days)",
+        "navigatorEscalation": "Flag if office BP ≥160/100 for immediate diagnosis without out-of-office monitoring",
+        "documentation": "Log COR 2a recommendation, LOE B-NR, and monitoring plan to health record"
+      },
+      "tags": {
+        "acute": false,
+        "chronic": false,
+        "screening": true,
+        "diagnosis": true,
+        "management": false,
+        "priority": "medium",
+        "topic": "hypertension_screening"
+      }
+    }
+  }
+}

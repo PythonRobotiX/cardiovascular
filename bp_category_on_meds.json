@@ -1,0 +1,136 @@
+{
+  "moduleTemplate": {
+    "name": "BP_Category_On_Meds",
+    "sections": {
+      "purpose": {
+        "clinicalProblem": {
+          "clinicalIntent": "Classify hypertension control status in patients already taking antihypertensive medication based on office and out-of-office BP measurements",
+          "whenToUse": "Follow-up visits for patients on antihypertensive therapy, medication adjustment decisions, treatment response assessment",
+          "decisionOrAction": "Hypertension classification (controlled/uncontrolled/masked uncontrolled/white-coat effect) + treatment adjustment recommendation"
+        }
+      },
+      "userFlow": {
+        "navigationPath": [
+          { "view": "BPOnMedsStartView", "purpose": "Entry point for patients on antihypertensive medication" },
+          { "view": "OfficeBPInputView", "purpose": "Input office/clinic BP reading" },
+          { "view": "OfficeBPClassificationView", "purpose": "Determine if office BP is high (≥130/80 or threshold per guidelines)" },
+          { "view": "OutOfOfficeBPInputView", "purpose": "Input out-of-office BP readings (home/ambulatory)" },
+          { "view": "OutOfOfficeBPClassificationView", "purpose": "Determine if out-of-office BP is high (≥130/80 or threshold per guidelines)" },
+          { "view": "CategoryLogicView", "purpose": "Apply 2x2 matrix logic to determine category" },
+          { "path": "view", "purpose": "Display final category with clinical implications" },
+          { "view": "TreatmentRoutingView", "purpose": "Recommend next steps based on category" },
+          { "view": "DocumentationView", "purpose": "Log classification to patient record" }
+        ]
+      },
+      "inputDataModel": {
+        "structName": "BPOnMedsInputModel",
+        "requiredFields": {
+          "officeSystolic": { "type": "Int?", "validation": "70-250" },
+          "officeDiastolic": { "type": "Int?", "validation": "40-150" },
+          "outOfOfficeSystolic": { "type": "Int?", "validation": "70-250" },
+          "outOfOfficeDiastolic": { "type": "Int?", "validation": "40-150" }
+        },
+        "optionalFields": {
+          "medicationList": { "type": "[String]?", "description": "Current antihypertensive medications" },
+          "measurementMethod": { "type": "String?", "options": ["home_monitoring", "ambulatory_monitoring"] },
+          "adherenceStatus": { "type": "String?", "options": ["adherent", "partially_adherent", "non_adherent"] }
+        },
+        "validationRules": [
+          "office systolic: 70-250",
+          "office diastolic: 40-150",
+          "out-of-office systolic: 70-250",
+          "out-of-office diastolic: 40-150",
+          "systolic >= diastolic for both measurements"
+        ]
+      },
+      "logicEngine": {
+        "rules": [
+          "Determine if office BP is high using guideline threshold (typically ≥130/80 or ≥140/90 per guidelines)",
+          "Determine if out-of-office BP is high using guideline threshold (typically ≥130/80 or ≥135/85 for home monitoring)",
+          "Apply 2x2 classification matrix:",
+          "- Office High? No + Out-of-office High? No → Controlled hypertension",
+          "- Office High? Yes + Out-of-office High? Yes → Uncontrolled hypertension",
+          "- Office High? No + Out-of-office High? Yes → Masked uncontrolled hypertension",
+          "- Office High? Yes + Out-of-office High? No → White-coat effect",
+          "Flag medication adjustment needs based on category"
+        ],
+        "thresholdsExample": {
+          "categories": [
+            { 
+              "name": "Controlled hypertension", 
+              "office_high": false, 
+              "outofoffice_high": false,
+              "clinical_meaning": "BP well-controlled on current regimen",
+              "action": "Continue current therapy, monitor regularly"
+            },
+            { 
+              "name": "Uncontrolled hypertension", 
+              "office_high": true, 
+              "outofoffice_high": true,
+              "clinical_meaning": "True inadequate BP control despite medication",
+              "action": "Intensify antihypertensive therapy"
+            },
+            { 
+              "name": "Masked uncontrolled hypertension", 
+              "office_high": false, 
+              "outofoffice_high": true,
+              "clinical_meaning": "BP appears controlled in clinic but not at home → increased cardiovascular risk",
+              "action": "Intensify therapy, emphasize home monitoring"
+            },
+            { 
+              "name": "White-coat effect", 
+              "office_high": true, 
+              "outofoffice_high": false,
+              "clinical_meaning": "BP elevated only in clinical setting, normal at home",
+              "action": "Avoid unnecessary medication intensification, confirm with home readings"
+            }
+          ]
+        }
+      },
+      "outputModel": {
+        "structName": "BPOnMedsOutputModel",
+        "fields": {
+          "category": { "type": "String", "description": "Controlled hypertension / Uncontrolled hypertension / Masked uncontrolled hypertension / White-coat effect" },
+          "officeHigh": { "type": "Bool", "description": "true if office BP exceeds threshold" },
+          "outOfOfficeHigh": { "type": "Bool", "description": "true if out-of-office BP exceeds threshold" },
+          "clinicalImplication": { "type": "String", "description": "Brief clinical interpretation of category" },
+          "recommendedAction": { "type": "String", "description": "Treatment adjustment or monitoring recommendation" },
+          "requiresMedicationChange": { "type": "Bool", "description": "true for uncontrolled or masked uncontrolled" }
+        },
+        "constraints": ["deterministic", "renderable", "safe"]
+      },
+      "crisisRules": {
+        "thresholds": {
+          "sbp": "N/A - classification for chronic management, not acute crisis",
+          "dbp": "N/A"
+        },
+        "symptomsToAsk": [],
+        "escalationLogic": {
+          "ifAnySymptomPresent": "N/A - separate hypertensive crisis protocol applies",
+          "ifNoSymptoms": "N/A"
+        },
+        "appDisplay": {
+          "screenType": "Standard classification display",
+          "button": "N/A",
+          "behavior": "Normal routing to treatment recommendations"
+        }
+      },
+      "nextStepRouting": {
+        "providerSuggestion": "Controlled: Continue current regimen, follow up in 3-6 months; Uncontrolled/Masked: Intensify therapy, follow up in 4 weeks; White-coat: Confirm with ambulatory monitoring, avoid medication changes",
+        "followUpTiming": "Controlled: 3-6 months; Uncontrolled/Masked: 4 weeks; White-coat: 6-12 months with home monitoring confirmation",
+        "repeatMeasurement": "Controlled: Routine visits; Uncontrolled/Masked: At each medication adjustment; White-coat: Repeat home monitoring periodically",
+        "navigatorEscalation": "Flag uncontrolled and masked uncontrolled for care team review and medication adjustment",
+        "documentation": "Log BP category to hypertension registry, update medication effectiveness record"
+      },
+      "tags": {
+        "acute": false,
+        "chronic": true,
+        "screening": false,
+        "diagnosis": false,
+        "management": true,
+        "priority": "high",
+        "topic": "hypertension_management"
+      }
+    }
+  }
+}

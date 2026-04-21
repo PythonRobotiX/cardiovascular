@@ -1,0 +1,138 @@
+{
+  "moduleTemplate": {
+    "name": "OH_Orthostatic_Hypotension_Management",
+    "sections": {
+      "purpose": {
+        "clinicalProblem": {
+          "clinicalIntent": "Provide evidence-based recommendations for managing orthostatic hypotension in hypertensive patients",
+          "whenToUse": "Hypertension management, medication adjustment, BP control optimization, OH screening",
+          "decisionOrAction": "OH risk reduction + BP target selection + symptomatic OH assessment"
+        }
+      },
+      "userFlow": {
+        "navigationPath": [
+          { "view": "OHStartView", "purpose": "Entry point for OH management recommendations" },
+          { "view": "RecommendationSelectionView", "purpose": "Select recommendation (1, 2, or 3)" },
+          { "view": "CORDisplayView", "purpose": "Show Class of Recommendation with strength" },
+          { "view": "LOEDisplayView", "purpose": "Show Level of Evidence with quality description" },
+          { "view": "ClinicalContextView", "purpose": "Specify patient population (hypertension, intensive therapy, medication initiation)" },
+          { "view": "ActionView", "purpose": "Display specific clinical action (improved BP control, SBP <130, OH assessment)" },
+          { "view": "OutcomeView", "purpose": "Show expected benefit (reduce OH risk, CVD/mortality benefit, detect chronic conditions)" },
+          { "view": "DocumentationView", "purpose": "Log recommendation application" }
+        ]
+      },
+      "inputDataModel": {
+        "structName": "OH_Management_InputModel",
+        "requiredFields": {
+          "recommendationNumber": { "type": "Int?", "validation": "1, 2, or 3" },
+          "patientPopulation": { "type": "String?", "validation": "Must match recommendation criteria" }
+        },
+        "optionalFields": {
+          "hypertensionStatus": { "type": "String?", "options": ["hypertensive", "not hypertensive"] },
+          "intensiveTherapy": { "type": "Bool?", "options": [true, false] },
+          "symptomaticOH": { "type": "Bool?", "options": [true, false] },
+          "asymptomaticOH": { "type": "Bool?", "options": [true, false] },
+          "medicationInitiation": { "type": "Bool?", "options": [true, false] },
+          "currentSBP": { "type": "Int?", "validation": "mm Hg value" }
+        },
+        "validationRules": [
+          "Recommendation 1: adults with hypertension",
+          "Recommendation 2: adults receiving intensive BP-lowering therapy with asymptomatic OH",
+          "Recommendation 3: adults with hypertension initiating treatment or adding medication with goal SBP <130 mm Hg"
+        ]
+      },
+      "logicEngine": {
+        "rules": [
+          "Match patient presentation to appropriate recommendation number",
+          "Apply COR strength to clinical decision",
+          "Use LOE to determine confidence in recommendation",
+          "Generate specific clinical action based on recommendation",
+          "Document expected outcomes"
+        ],
+        "thresholdsExample": {
+          "recommendations": [
+            {
+              "number": 1,
+              "title": "OH Risk Reduction",
+              "population": "adults with hypertension",
+              "action": "improved BP control",
+              "outcome": "reduce risk for OH",
+              "cor": "Class 1",
+              "cor_strength": "STRONG",
+              "loe": "Level A",
+              "loe_quality": "High-quality evidence from >1 RCT or meta-analyses"
+            },
+            {
+              "number": 2,
+              "title": "Intensive Therapy with Asymptomatic OH",
+              "population": "adults receiving intensive BP-lowering therapy with asymptomatic OH",
+              "action": "treatment with goal of SBP <130 mm Hg",
+              "outcome": "increased CVD and mortality benefit",
+              "cor": "Class 2a",
+              "cor_strength": "MODERATE",
+              "loe": "Level A",
+              "loe_quality": "High-quality evidence from >1 RCT or meta-analyses"
+            },
+            {
+              "number": 3,
+              "title": "Symptomatic OH Assessment",
+              "population": "adults with hypertension initiating treatment or adding medication with goal SBP <130 mm Hg",
+              "action": "assessment for symptomatic OH",
+              "outcome": "detect other chronic conditions",
+              "cor": "Class 2a",
+              "cor_strength": "MODERATE",
+              "loe": "Level B-R",
+              "loe_quality": "Moderate-quality evidence from 1 or more RCTs or meta-analyses of moderate-quality RCTs"
+            }
+          ]
+        }
+      },
+      "outputModel": {
+        "structName": "OH_Management_OutputModel",
+        "fields": {
+          "category": { "type": "String", "description": "e.g., 'Recommendation 1: OH Risk Reduction'" },
+          "cor": { "type": "String", "description": "e.g., 'Class 1 (STRONG)'" },
+          "loe": { "type": "String", "description": "e.g., 'Level A'" },
+          "loeDescription": { "type": "String", "description": "e.g., 'High-quality evidence from more than 1 RCT'" },
+          "population": { "type": "String", "description": "Specific patient population for recommendation" },
+          "action": { "type": "String", "description": "Clinical action to take" },
+          "expectedOutcome": { "type": "String", "description": "Expected benefit" },
+          "suggestedPhrasing": { "type": "String", "description": "Based on COR" }
+        },
+        "constraints": ["deterministic", "renderable", "safe"]
+      },
+      "crisisRules": {
+        "thresholds": {
+          "sbp": "N/A - OH management",
+          "dbp": "N/A - OH management"
+        },
+        "symptomsToAsk": ["Symptomatic OH (dizziness, lightheadedness, syncope)"],
+        "escalationLogic": {
+          "ifAnySymptomPresent": "Assess for chronic conditions per Recommendation 3",
+          "ifNoSymptoms": "Continue intensive therapy per Recommendation 2 if applicable"
+        },
+        "appDisplay": {
+          "screenType": "Clinical recommendation display",
+          "button": "Apply recommendation",
+          "behavior": "Normal clinical routing"
+        }
+      },
+      "nextStepRouting": {
+        "providerSuggestion": "Follow COR/LOE guidance for OH management",
+        "followUpTiming": "Per hypertension management schedule",
+        "repeatMeasurement": "Monitor BP and OH symptoms",
+        "navigatorEscalation": "Flag symptomatic OH for chronic condition workup",
+        "documentation": "Log OH assessment and management actions"
+      },
+      "tags": {
+        "acute": false,
+        "chronic": true,
+        "screening": true,
+        "diagnosis": false,
+        "management": true,
+        "priority": "high",
+        "topic": "orthostatic_hypotension"
+      }
+    }
+  }
+}

@@ -1,0 +1,148 @@
+{
+  "moduleTemplate": {
+    "name": "Oral_Antihypertensives_Pregnancy",
+    "sections": {
+      "purpose": {
+        "clinicalProblem": {
+          "clinicalIntent": "Reference for oral antihypertensive agents safe for use during pregnancy",
+          "whenToUse": "Hypertension management in pregnant patients requiring pharmacologic treatment",
+          "decisionOrAction": "Medication selection based on dosage, safety profile, and contraindications"
+        }
+      },
+      "userFlow": {
+        "navigationPath": [
+          { "view": "MedicationListView", "purpose": "Display list of antihypertensive agents" },
+          { "view": "LabetalolDetailView", "purpose": "Show labetalol dosage, comments, contraindications" },
+          { "view": "NifedipineDetailView", "purpose": "Show nifedipine dosage, comments, warnings" },
+          { "view": "MethyldopaDetailView", "purpose": "Show methyldopa dosage, comments, side effects" },
+          { "view": "HydrochlorothiazideDetailView", "purpose": "Show HCTZ dosage, comments, line designation" },
+          { "view": "ComparisonView", "purpose": "Compare all agents side by side" },
+          { "view": "ContraindicationAlertView", "purpose": "Display warnings when applicable" },
+          { "view": "SelectionOutputView", "purpose": "Confirm medication selection and prescribing info" }
+        ]
+      },
+      "inputDataModel": {
+        "structName": "AntihypertensiveSelectionInputModel",
+        "requiredFields": {
+          "patientCondition": { "type": "String?", "validation": "Pregnancy status: confirmed" },
+          "bloodPressure": { "type": "String?", "validation": "SBP/DBP values" }
+        },
+        "optionalFields": {
+          "hasAsthma": { "type": "Bool?", "options": [true, false] },
+          "hasHeartBlock": { "type": "Bool?", "options": [true, false] },
+          "hasBradycardia": { "type": "Bool?", "options": [true, false] },
+          "hasTachycardia": { "type": "Bool?", "options": [true, false] },
+          "hasMyocardialDisease": { "type": "Bool?", "options": [true, false] },
+          "severityLevel": { "type": "String?", "options": ["mild", "moderate", "severe", "acute"] },
+          "inpatientStatus": { "type": "Bool?", "options": [true, false] }
+        },
+        "validationRules": [
+          "Verify pregnancy before prescribing",
+          "Check contraindications for each agent",
+          "Severe hypertension may require hospitalization"
+        ]
+      },
+      "logicEngine": {
+        "rules": [
+          "If asthma, preexisting myocardial disease, decompensated cardiac function, heart block, or bradycardia → avoid labetalol",
+          "If tachycardia → avoid nifedipine",
+          "If severe acutely elevated BP in hospitalized patient → may use immediate-release nifedipine",
+          "If long-term outpatient management → prefer extended-release formulations",
+          "Methyldopa has longest safety data (7 years offspring follow-up) but limited efficacy for severe hypertension",
+          "Hydrochlorothiazide is second- or third-line only",
+          "Sublingual nifedipine is contraindicated"
+        ],
+        "thresholdsExample": {
+          "medications": [
+            {
+              "name": "Labetalol",
+              "dosage_range": "200-2,400 mg/day",
+              "dosage_frequency": "2 to 3 divided doses",
+              "common_initiation": "100-200 mg twice daily",
+              "contraindications": ["asthma", "preexisting myocardial disease", "decompensated cardiac function", "heart block", "bradycardia"],
+              "side_effects": ["bronchoconstriction"],
+              "line_therapy": "First-line"
+            },
+            {
+              "name": "Nifedipine",
+              "dosage_range": "30-120 mg/day",
+              "dosage_frequency": "once daily",
+              "common_initiation": "30-60 mg once daily (extended release)",
+              "warnings": ["Do not use sublingual form", "Avoid in tachycardia", "Immediate-release only for hospitalized severe acute hypertension"],
+              "side_effects": [],
+              "line_therapy": "First-line"
+            },
+            {
+              "name": "Methyldopa",
+              "dosage_range": "500-3,000 mg/day",
+              "dosage_frequency": "2 to 4 divided doses",
+              "common_initiation": "250 mg 2 or 3 times daily",
+              "safety_data": "Up to 7 years of age in offspring",
+              "limitations": ["May not be as effective for severe hypertension", "Side effect profile limits use"],
+              "side_effects": ["sedation", "depression", "dizziness"],
+              "line_therapy": "First-line (historical)"
+            },
+            {
+              "name": "Hydrochlorothiazide",
+              "dosage_range": "12.5-50 mg",
+              "dosage_frequency": "daily",
+              "common_initiation": "12.5-25 mg daily",
+              "line_therapy": "Second- or third-line"
+            }
+          ]
+        }
+      },
+      "outputModel": {
+        "structName": "AntihypertensiveOutputModel",
+        "fields": {
+          "category": { "type": "String", "description": "Selected medication name" },
+          "recommendedDosage": { "type": "String", "description": "Individualized dosage based on patient factors" },
+          "frequency": { "type": "String", "description": "Dosing schedule" },
+          "contraindicationFlags": { "type": "[String]", "description": "List of active contraindications" },
+          "warnings": { "type": "[String]", "description": "Medication-specific warnings" },
+          "lineTherapy": { "type": "String", "values": ["First-line", "Second-line", "Third-line"] },
+          "prescribingInstructions": { "type": "String", "description": "Clinical pearls for safe prescribing" }
+        },
+        "constraints": ["deterministic", "renderable", "safe"]
+      },
+      "crisisRules": {
+        "thresholds": {
+          "sbp": "≥160 or severe range",
+          "dbp": "≥110 or severe range"
+        },
+        "symptomsToAsk": [
+          "Severe headache",
+          "Visual changes",
+          "Epigastric pain",
+          "Shortness of breath",
+          "Chest pain"
+        ],
+        "escalationLogic": {
+          "ifAnySymptomPresent": "Consider hospitalization and IV antihypertensives",
+          "ifNoSymptoms": "Initiate oral therapy with close monitoring"
+        },
+        "appDisplay": {
+          "screenType": "Severe hypertension alert",
+          "button": "Contact obstetric provider immediately",
+          "behavior": "Assess need for inpatient management"
+        }
+      },
+      "nextStepRouting": {
+        "providerSuggestion": "Initiate first-line agent (labetalol or nifedipine extended-release) unless contraindicated",
+        "followUpTiming": "Recheck BP within 24-48 hours after initiation; adjust dosage weekly",
+        "repeatMeasurement": "Monitor BP at each prenatal visit",
+        "navigatorEscalation": "Alert if severe hypertension persists despite oral therapy",
+        "documentation": "Log medication name, dosage, frequency, and rationale for selection"
+      },
+      "tags": {
+        "acute": false,
+        "chronic": true,
+        "screening": false,
+        "diagnosis": false,
+        "management": true,
+        "priority": "high",
+        "topic": "hypertension_pregnancy"
+      }
+    }
+  }
+}

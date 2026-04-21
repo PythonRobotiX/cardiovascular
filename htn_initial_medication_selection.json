@@ -1,0 +1,108 @@
+{
+  "moduleTemplate": {
+    "name": "HTN_Initial_Medication_Selection",
+    "sections": {
+      "purpose": {
+        "clinicalProblem": {
+          "clinicalIntent": "Guide initial antihypertensive drug selection for adults with primary hypertension",
+          "whenToUse": "Initial medication prescription for primary hypertension in adults",
+          "decisionOrAction": "First-line drug class selection (thiazide diuretics, CCB, ACEi, ARB) to prevent CVD"
+        }
+      },
+      "userFlow": {
+        "navigationPath": [
+          { "view": "HTNStartView", "purpose": "Entry point for hypertension medication selection" },
+          { "view": "PatientAssessmentView", "purpose": "Confirm primary hypertension diagnosis and contraindications" },
+          { "view": "DrugClassSelectionView", "purpose": "Present first-line options: thiazide, CCB, ACEi, ARB" },
+          { "view": "PatientFactorsView", "purpose": "Consider age, race, comorbidities" },
+          { "view": "RecommendationDisplayView", "purpose": "Show COR 1, LOE A recommendation" },
+          { "view": "PrescriptionView", "purpose": "Generate prescription for selected drug class" },
+          { "view": "CVDPreventionView", "purpose": "Explain CVD prevention benefit" },
+          { "view": "FollowUpView", "purpose": "Schedule BP monitoring and titration follow-up" }
+        ]
+      },
+      "inputDataModel": {
+        "structName": "HTN_Medication_InputModel",
+        "requiredFields": {
+          "age": { "type": "Int?", "validation": "≥18" },
+          "hypertensionDiagnosis": { "type": "Bool?", "validation": "Must be true" },
+          "bpSystolic": { "type": "Int?", "validation": "≥130" },
+          "bpDiastolic": { "type": "Int?", "validation": "≥80" }
+        },
+        "optionalFields": {
+          "race": { "type": "String?", "options": ["Black", "non-Black"] },
+          "comorbidities": { "type": "[String]?", "options": ["diabetes", "CKD", "HF", "CAD"] },
+          "contraindications": { "type": "[String]?", "options": ["pregnancy", "renal artery stenosis", "hyperkalemia"] }
+        },
+        "validationRules": [
+          "Age ≥ 18 years",
+          "Confirmed primary hypertension diagnosis",
+          "No contraindications to first-line agents"
+        ]
+      },
+      "logicEngine": {
+        "rules": [
+          "Class of Recommendation: 1 (STRONG) - Benefit >>> Risk",
+          "Level of Evidence: A (High-quality evidence from >1 RCT or meta-analyses)",
+          "First-line options: thiazide-type diuretics, long-acting dihydropyridine CCB, ACEi, ARB",
+          "Black patients: CCB or thiazide preferred as initial monotherapy",
+          "Non-Black patients: Any first-line agent appropriate",
+          "ACEi and ARB contraindicated in pregnancy",
+          "Combination therapy may be needed for BP >20/10 above goal"
+        ],
+        "thresholdsExample": {
+          "categories": [
+            { "name": "Class 1", "strength": "STRONG", "evidence": "Level A", "recommendation": "Is recommended as first-line therapy" },
+            { "name": "First-line Drug Classes", "options": ["Thiazide-type diuretics", "Long-acting dihydropyridine CCB", "ACEi", "ARB"] },
+            { "name": "Clinical Goal", "target": "Prevent CVD", "outcomes": ["MI", "stroke", "HF", "CVD death"] }
+          ]
+        }
+      },
+      "outputModel": {
+        "structName": "HTN_Medication_OutputModel",
+        "fields": {
+          "category": { "type": "String", "description": "'Class 1 (STRONG) - Level A'" },
+          "consistency": { "type": "String?", "values": ["guideline-concordant", "guideline-discordant"] },
+          "recommendedNextStep": { "type": "String", "description": "Initiate first-line antihypertensive based on patient factors" },
+          "crisis": { "type": "Bool", "description": "false - this is routine initial treatment" },
+          "crisisSymptoms": { "type": "[String]?", "condition": "if crisis == true" }
+        },
+        "constraints": ["deterministic", "renderable", "safe"]
+      },
+      "crisisRules": {
+        "thresholds": {
+          "sbp": "N/A - medication selection, not acute measurement",
+          "dbp": "N/A"
+        },
+        "symptomsToAsk": [
+          "Not applicable for medication selection recommendation"
+        ],
+        "escalationLogic": {
+          "ifAnySymptomPresent": "N/A",
+          "ifNoSymptoms": "N/A"
+        },
+        "appDisplay": {
+          "screenType": "Standard guideline recommendation display",
+          "button": "Generate prescription order",
+          "behavior": "Normal clinical workflow"
+        }
+      },
+      "nextStepRouting": {
+        "providerSuggestion": "Initiate monotherapy with thiazide, CCB, ACEi, or ARB based on patient characteristics",
+        "followUpTiming": "Follow up in 2-4 weeks to assess BP response and tolerability",
+        "repeatMeasurement": "Monitor BP at each visit; titrate or add second agent if not at goal",
+        "navigatorEscalation": "Flag if prescribing non-first-line agent without documented justification",
+        "documentation": "Log medication class selection, COR 1 LOE A designation, and clinical rationale"
+      },
+      "tags": {
+        "acute": false,
+        "chronic": true,
+        "screening": false,
+        "diagnosis": false,
+        "management": true,
+        "priority": "high",
+        "topic": "hypertension_medication"
+      }
+    }
+  }
+}

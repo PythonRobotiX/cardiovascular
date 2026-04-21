@@ -1,0 +1,120 @@
+{
+  "moduleTemplate": {
+    "name": "Hypertension_Intervention_Impact",
+    "sections": {
+      "purpose": {
+        "clinicalProblem": {
+          "clinicalIntent": "Quantify expected SBP reduction from lifestyle interventions and define medication initiation thresholds",
+          "whenToUse": "Treatment planning, shared decision-making, lifestyle counseling, medication initiation decisions",
+          "decisionOrAction": "Select appropriate intervention based on expected BP reduction + determine medication initiation threshold based on patient risk profile"
+        }
+      },
+      "userFlow": {
+        "navigationPath": [
+          { "view": "InterventionStartView", "purpose": "Entry point for intervention selection" },
+          { "view": "InterventionSelectionView", "purpose": "Display lifestyle intervention options with SBP reduction ranges" },
+          { "view": "HypertensionStatusView", "purpose": "Determine if patient has HTN or without HTN" },
+          { "view": "RiskStratificationView", "purpose": "Assess CVD, diabetes, CKD status and risk score" },
+          { "view": "MedicationThresholdView", "purpose": "Display appropriate medication initiation threshold based on risk" },
+          { "view": "ComparativeEffectView", "purpose": "Compare expected SBP reduction across interventions" },
+          { "view": "TreatmentPlanView", "purpose": "Generate combined lifestyle + medication recommendation" },
+          { "view": "DocumentationView", "purpose": "Log intervention plan to health record" }
+        ]
+      },
+      "inputDataModel": {
+        "structName": "HypertensionInterventionInputModel",
+        "requiredFields": {
+          "currentSBP": { "type": "Int?", "validation": "70-250" },
+          "currentDBP": { "type": "Int?", "validation": "40-150" },
+          "hasHTN": { "type": "Bool?", "description": "Known hypertension diagnosis" }
+        },
+        "optionalFields": {
+          "hasClinicalCVD": { "type": "Bool?", "description": "History of clinical cardiovascular disease" },
+          "hasDiabetes": { "type": "Bool?", "description": "Diabetes diagnosis" },
+          "hasCKD": { "type": "Bool?", "description": "Chronic kidney disease" },
+          "ascvdRiskScore": { "type": "Double?", "validation": "0-100", "description": "10-year ASCVD risk percentage" },
+          "selectedIntervention": { "type": "String?", "options": ["weight_loss", "dash_diet", "sodium_reduction", "salt_substitute", "aerobic_exercise", "isometric_resistance", "meditation_breathing"] }
+        },
+        "validationRules": [
+          "If SBP ≥140 or DBP ≥90 → evaluate medication need",
+          "If clinical CVD present → lower threshold (≥130/80)",
+          "If diabetes/CKD/high risk (≥7.5%) → lower threshold (≥130/80)",
+          "If low risk (<7.5%) → 3-6 months lifestyle trial before meds"
+        ]
+      },
+      "logicEngine": {
+        "rules": [
+          "Determine patient HTN status (with HTN vs without HTN)",
+          "Select appropriate SBP reduction range based on HTN status for each intervention",
+          "Calculate expected total SBP reduction from combined interventions",
+          "Assess risk factors: clinical CVD, diabetes, CKD, ASCVD risk score",
+          "Apply medication initiation threshold based on risk profile",
+          "If low risk and BP remains ≥130/80 after 3-6 months of lifestyle changes → consider meds"
+        ],
+        "thresholdsExample": {
+          "interventions": [
+            { "name": "Weight loss", "withHTN": "-6 to -8 mm Hg", "withoutHTN": "-3 to -5 mm Hg" },
+            { "name": "DASH Diet", "withHTN": "-5 to -8 mm Hg", "withoutHTN": "-3 to -7 mm Hg" },
+            { "name": "Sodium Reduction", "withHTN": "-6 to -8 mm Hg", "withoutHTN": "-1 to -4 mm Hg" },
+            { "name": "Salt Substitute", "withHTN": "-5 to -7 mm Hg", "withoutHTN": "-5 mm Hg" },
+            { "name": "Aerobic Exercise", "withHTN": "-4 to -8 mm Hg", "withoutHTN": "-2 to -7 mm Hg" },
+            { "name": "Isometric Resistance", "withHTN": "-5 to -10 mm Hg", "withoutHTN": "-4 to -6 mm Hg" },
+            { "name": "Meditation/Breathing", "withHTN": "Approx. -5 mm Hg", "withoutHTN": "Approx. -5 mm Hg" }
+          ],
+          "medicationThresholds": [
+            { "population": "General Hypertension", "threshold": "SBP ≥140 or DBP ≥90", "cor": "1", "loe": "A" },
+            { "population": "With Clinical CVD", "threshold": "SBP ≥130 or DBP ≥80", "cor": "1", "loe": "A/C-LD" },
+            { "population": "No CVD but Diabetes/CKD/High Risk (≥7.5%)", "threshold": "SBP ≥130 or DBP ≥80", "cor": "1", "loe": "A/C-LD" },
+            { "population": "Low Risk (<7.5%)", "threshold": "BP remains ≥130/80 after 3-6 months of lifestyle changes", "cor": "1", "loe": "B-R" }
+          ]
+        }
+      },
+      "outputModel": {
+        "structName": "HypertensionInterventionOutputModel",
+        "fields": {
+          "category": { "type": "String", "description": "e.g., 'Lifestyle + Medication Treatment Plan'" },
+          "expectedSBPReduction": { "type": "String", "description": "e.g., 'Weight loss: -6 to -8 mm Hg'" },
+          "recommendedInterventions": { "type": "[String]", "description": "Array of recommended lifestyle interventions" },
+          "totalExpectedReduction": { "type": "String", "description": "Combined expected SBP reduction range" },
+          "medicationThreshold": { "type": "String", "description": "e.g., 'Start meds if SBP ≥140 or DBP ≥90'" },
+          "meetsMedicationCriteria": { "type": "Bool" },
+          "cor": { "type": "String", "description": "Class of Recommendation (1)" },
+          "loe": { "type": "String", "description": "Level of Evidence (A, A/C-LD, or B-R)" }
+        },
+        "constraints": ["deterministic", "renderable", "safe"]
+      },
+      "crisisRules": {
+        "thresholds": {
+          "sbp": "N/A - intervention module only",
+          "dbp": "N/A - intervention module only"
+        },
+        "symptomsToAsk": [],
+        "escalationLogic": {
+          "ifAnySymptomPresent": "N/A",
+          "ifNoSymptoms": "N/A"
+        },
+        "appDisplay": {
+          "screenType": "Standard treatment planning display",
+          "button": "N/A",
+          "behavior": "Normal routing to treatment plan"
+        }
+      },
+      "nextStepRouting": {
+        "providerSuggestion": "Initiate selected lifestyle interventions; reassess BP in 3-6 months",
+        "followUpTiming": "3-6 months for low risk; 1 month for high risk or medication initiation",
+        "repeatMeasurement": "Repeat BP at each follow-up to assess intervention effectiveness",
+        "navigatorEscalation": "Notify care team if BP exceeds medication threshold or remains uncontrolled after 6 months",
+        "documentation": "Log selected interventions, expected SBP reduction, and medication threshold to treatment plan"
+      },
+      "tags": {
+        "acute": false,
+        "chronic": true,
+        "screening": false,
+        "diagnosis": false,
+        "management": true,
+        "priority": "high",
+        "topic": "hypertension_treatment"
+      }
+    }
+  }
+}

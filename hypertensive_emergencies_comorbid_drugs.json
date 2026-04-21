@@ -1,0 +1,157 @@
+{
+  "moduleTemplate": {
+    "name": "Hypertensive_Emergencies_Comorbidity_Drug_Selector",
+    "sections": {
+      "purpose": {
+        "clinicalProblem": {
+          "clinicalIntent": "Select appropriate intravenous antihypertensive drug based on comorbidity in hypertensive emergencies",
+          "whenToUse": "Hypertensive emergency with SBP ≥180 or DBP ≥120 with acute target organ damage",
+          "decisionOrAction": "Comorbidity-specific drug recommendation with BP targets and warnings"
+        }
+      },
+      "userFlow": {
+        "navigationPath": [
+          { "view": "EmergenciesStartView", "purpose": "Entry point - confirms hypertensive emergency" },
+          { "view": "ComorbiditySelectionView", "purpose": "Select from 8 comorbidity categories" },
+          { "view": "DrugDisplayView", "purpose": "Show preferred drug(s) for selected comorbidity" },
+          { "view": "CommentsView", "purpose": "Display special instructions, contraindications, warnings" },
+          { "view": "BPGoalView", "purpose": "Show BP target and timing requirements" },
+          { "view": "ContraindicationAlertView", "purpose": "Flag absolute contraindications if present" },
+          { "view": "DrugAdministrationView", "purpose": "Dosing, infusion rate, monitoring guidance" },
+          { "view": "EscalationDecisionView", "purpose": "Route to ICU monitoring or step therapy" }
+        ]
+      },
+      "inputDataModel": {
+        "structName": "HypertensiveEmergencyInputModel",
+        "requiredFields": {
+          "systolic": { "type": "Int?", "validation": "≥180 for crisis" },
+          "diastolic": { "type": "Int?", "validation": "≥120 for crisis" },
+          "comorbidity": { "type": "String?", "validation": "Must be one of 8 specified comorbidities" }
+        },
+        "optionalFields": {
+          "heartRate": { "type": "Int?", "validation": "For beta blocker contraindication check" },
+          "pde5InhibitorUse": { "type": "Bool?", "description": "For nitrate contraindication" },
+          "preoperativeBP": { "type": "Int?", "description": "For perioperative hypertension criteria" }
+        },
+        "validationRules": [
+          "SBP ≥180 or DBP ≥120 for emergency classification",
+          "Comorbidity must match one of 8 categories",
+          "Check drug-specific contraindications before recommendation"
+        ]
+      },
+      "logicEngine": {
+        "rules": [
+          "Identify presenting comorbidity from 8 categories",
+          "Map comorbidity to preferred drug(s)",
+          "Apply BP target based on comorbidity (especially aortic dissection: SBP ≤120 mmHg within 20 min)",
+          "Check absolute contraindications (beta blockers in pulmonary edema, ACE/ARB in eclampsia)",
+          "Flag drug interactions (PDE-5 inhibitors + nitrates = profound hypotension)",
+          "Apply beta blocker contraindications: bradycardia <60, SBP <100, 2nd/3rd degree heart block, reactive airway disease, moderate-severe LV failure with pulmonary edema",
+          "Route to appropriate monitoring setting (ICU vs step-down)"
+        ],
+        "thresholdsExample": {
+          "comorbidities": [
+            {
+              "name": "Acute aortic dissection",
+              "preferredDrugs": ["Esmolol", "Labetalol"],
+              "bpTarget": "SBP ≤120 mm Hg",
+              "timing": "within 20 min",
+              "specialInstructions": "Beta blockade should precede vasodilator (nicardipine/nitroprusside) to prevent reflex tachycardia"
+            },
+            {
+              "name": "Acute pulmonary edema",
+              "preferredDrugs": ["Clevidipine", "Nitroglycerin", "Nitroprusside"],
+              "contraindications": ["Beta blockers"],
+              "specialInstructions": "Beta blockers contraindicated"
+            },
+            {
+              "name": "Acute coronary syndromes",
+              "preferredDrugs": ["Esmolol", "Labetalol", "Nicardipine", "Nitroglycerin"],
+              "contraindications": ["Beta blockers if: bradycardia <60, SBP <100, 2nd/3rd degree heart block, reactive airway disease, moderate-severe LV failure with pulmonary edema", "Nitrates with PDE-5 inhibitors → profound hypotension"]
+            },
+            {
+              "name": "Acute kidney injury",
+              "preferredDrugs": ["Clevidipine", "Fenoldopam", "Nicardipine"],
+              "specialInstructions": "N/A"
+            },
+            {
+              "name": "Eclampsia or preeclampsia",
+              "preferredDrugs": ["Hydralazine", "Labetalol", "Nicardipine", "Nifedipine"],
+              "bpTarget": "Rapid BP lowering",
+              "contraindications": ["ACE inhibitors", "ARB", "Renin inhibitors", "Nitroprusside"]
+            },
+            {
+              "name": "Perioperative hypertension",
+              "preferredDrugs": ["Clevidipine", "Esmolol", "Nicardipine", "Nitroglycerin"],
+              "criteria": "BP >160/90 mm Hg or SBP elevation ≥20% of preoperative value persisting >15 min",
+              "specialInstructions": "Intraoperative hypertension most frequent during anesthesia induction and airway manipulation"
+            },
+            {
+              "name": "Acute sympathetic discharge or catecholamine excess states",
+              "preferredDrugs": ["Clevidipine", "Nicardipine", "Phentolamine"],
+              "bpTarget": "Rapid lowering of BP",
+              "examples": ["Pheochromocytoma", "Postcarotid endarterectomy status"]
+            },
+            {
+              "name": "Acute ICH",
+              "preferredDrugs": ["Clevidipine", "Nicardipine", "Esmolol", "Labetalol", "Hydralazine"],
+              "reference": "Section 5.3.9.1"
+            },
+            {
+              "name": "Acute ischemic stroke",
+              "preferredDrugs": ["Clevidipine", "Nicardipine", "Esmolol", "Labetalol", "Hydralazine"],
+              "reference": "Section 5.3.9.2"
+            }
+          ]
+        }
+      },
+      "outputModel": {
+        "structName": "HypertensiveEmergencyOutputModel",
+        "fields": {
+          "category": { "type": "String", "description": "e.g., 'Acute aortic dissection'" },
+          "preferredDrugs": { "type": "[String]", "description": "List of recommended IV antihypertensives" },
+          "bpTarget": { "type": "String", "description": "e.g., 'SBP ≤120 mm Hg within 20 min'" },
+          "contraindications": { "type": "[String]", "description": "Absolute contraindications for this comorbidity" },
+          "warnings": { "type": "[String]", "description": "Drug interactions and precautions" },
+          "requiresICU": { "type": "Bool", "description": "Most hypertensive emergencies require ICU" },
+          "betaBlockerContraindicated": { "type": "Bool", "description": "Flag if patient has beta blocker contraindications" }
+        },
+        "constraints": ["deterministic", "renderable", "safe"]
+      },
+      "crisisRules": {
+        "thresholds": {
+          "sbp": "≥180",
+          "dbp": "≥120"
+        },
+        "symptomsToAsk": [
+          "Acute target organ damage: chest pain (aortic dissection/ACS), dyspnea (pulmonary edema), neurologic deficits (stroke/ICH), visual changes (eclampsia), oliguria (AKI)"
+        ],
+        "escalationLogic": {
+          "ifAnySymptomPresent": "Admit to ICU, initiate IV antihypertensive immediately",
+          "ifNoSymptoms": "Recheck diagnosis - may be hypertensive urgency, not emergency"
+        },
+        "appDisplay": {
+          "screenType": "Red alert crisis screen with comorbidity selector",
+          "button": "Emergency drug protocol + ICU consult",
+          "behavior": "Do not proceed to outpatient routing - hospital admission required"
+        }
+      },
+      "nextStepRouting": {
+        "providerSuggestion": "Immediate IV antihypertensive administration in monitored setting (ICU/ED)",
+        "followUpTiming": "Continuous BP monitoring - reassess q5-15min until stable",
+        "repeatMeasurement": "BP checked continuously via arterial line preferred",
+        "navigatorEscalation": "Page on-call hospitalist/critical care physician immediately",
+        "documentation": "Log comorbidity, drug administered, BP response, time to target"
+      },
+      "tags": {
+        "acute": true,
+        "chronic": false,
+        "screening": false,
+        "diagnosis": true,
+        "management": true,
+        "priority": "high",
+        "topic": "hypertensive_emergency_drug_therapy"
+      }
+    }
+  }
+}

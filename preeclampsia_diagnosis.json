@@ -1,0 +1,143 @@
+{
+  "moduleTemplate": {
+    "name": "Preeclampsia_Diagnosis",
+    "sections": {
+      "purpose": {
+        "clinicalProblem": {
+          "clinicalIntent": "Standardized diagnostic criteria for preeclampsia in pregnant patients after 20 weeks gestation",
+          "whenToUse": "Prenatal visits, triage evaluation, suspected hypertensive disorder of pregnancy",
+          "decisionOrAction": "Preeclampsia classification + severity determination + delivery/treatment routing"
+        }
+      },
+      "userFlow": {
+        "navigationPath": [
+          { "view": "PreeclampsiaStartView", "purpose": "Entry point for preeclampsia diagnostic evaluation" },
+          { "view": "GestationalAgeView", "purpose": "Confirm >20 weeks gestation" },
+          { "view": "BPMeasurementView", "purpose": "Measure SBP and DBP, confirm prior normal BP" },
+          { "view": "BPIntervalView", "purpose": "Check 4-hour interval for mild hypertension or short interval for severe" },
+          { "view": "ProteinuriaAssessmentView", "purpose": "Select proteinuria testing method (24hr urine, P/C ratio, dipstick)" },
+          { "view": "EndOrganDamageView", "purpose": "Assess for thrombocytopenia, renal insufficiency, liver dysfunction, pulmonary edema, headache/visual symptoms" },
+          { "view": "DiagnosticLogicView", "purpose": "Apply diagnostic rules engine" },
+          { "view": "ResultClassificationView", "purpose": "Display preeclampsia diagnosis + severity + next steps" }
+        ]
+      },
+      "inputDataModel": {
+        "structName": "PreeclampsiaInputModel",
+        "requiredFields": {
+          "gestationalWeeks": { "type": "Int?", "validation": ">20" },
+          "systolicBP": { "type": "Int?", "validation": "≥140 triggers evaluation" },
+          "diastolicBP": { "type": "Int?", "validation": "≥90 triggers evaluation" },
+          "previousBPNormal": { "type": "Bool?", "validation": "true for preeclampsia criteria" }
+        },
+        "optionalFields": {
+          "proteinuria24hr": { "type": "Int?", "options": "mg per 24hr, threshold ≥300" },
+          "proteinCreatinineRatio": { "type": "Float?", "options": "threshold ≥0.3" },
+          "dipstickReading": { "type": "String?", "options": ["1+", "2+", "3+", "4+"] },
+          "plateletCount": { "type": "Int?", "validation": "threshold <100 × 10^9/L" },
+          "serumCreatinine": { "type": "Float?", "validation": ">1.1 mg/dL or doubling" },
+          "altAST": { "type": "Int?", "validation": ">2x upper limit normal" },
+          "pulmonaryEdema": { "type": "Bool?" },
+          "newHeadache": { "type": "Bool?" },
+          "visualSymptoms": { "type": "Bool?" },
+          "severeHypertension": { "type": "Bool?", "condition": "SBP ≥160 or DBP ≥110" }
+        },
+        "validationRules": [
+          "Gestational age must be >20 weeks",
+          "Patient must have previously normal BP",
+          "BP elevation must be confirmed on 2 occasions",
+          "Mild HTN (140-159/90-109): 4 hours apart",
+          "Severe HTN (≥160/≥110): short interval (minutes) allowed"
+        ]
+      },
+      "logicEngine": {
+        "rules": [
+          "Check gestational age >20 weeks AND previously normal BP",
+          "Check BP criteria: (SBP ≥140 OR DBP ≥90) on 2 occasions ≥4 hours apart OR (SBP ≥160 OR DBP ≥110) confirmed within minutes",
+          "Check proteinuria criteria: ≥300 mg/24hr OR P/C ratio ≥0.3 OR dipstick 2+ (only if quantitative unavailable)",
+          "If proteinuria absent, check for new onset end-organ damage with new hypertension:",
+          "  - Thrombocytopenia: Platelets <100 × 10^9/L",
+          "  - Renal insufficiency: Creatinine >1.1 mg/dL OR doubling",
+          "  - Liver dysfunction: AST/ALT >2x normal",
+          "  - Pulmonary edema",
+          "  - New headache unresponsive to meds (not alternative diagnosis) OR visual symptoms",
+          "If BP criteria met AND (proteinuria OR end-organ damage) → Diagnose preeclampsia",
+          "If severe hypertension (≥160/≥110) → Flag for severe features"
+        ],
+        "thresholdsExample": {
+          "categories": [
+            { "name": "Normal Pregnancy", "bp_sbp": "<140", "bp_dbp": "<90", "proteinuria": "absent", "end_organ": "absent" },
+            { "name": "Gestational Hypertension", "bp_sbp": "≥140", "bp_dbp": "≥90", "proteinuria": "absent", "end_organ": "absent" },
+            { "name": "Preeclampsia", "bp_sbp": "≥140", "bp_dbp": "≥90", "proteinuria": "present", "end_organ": "absent", "operator": "OR" },
+            { "name": "Preeclampsia without Proteinuria", "bp_sbp": "≥140", "bp_dbp": "≥90", "proteinuria": "absent", "end_organ": "present" },
+            { "name": "Preeclampsia with Severe Features", "bp_sbp": "≥160", "bp_dbp": "≥110", "severe_features": "any", "note": "Short interval confirmation allowed" }
+          ],
+          "proteinuriaThresholds": [
+            { "test": "24-hour urine collection", "threshold": "≥300 mg" },
+            { "test": "Protein/Creatinine ratio", "threshold": "≥0.3" },
+            { "test": "Dipstick", "threshold": "≥2+", "note": "Only if quantitative unavailable" }
+          ],
+          "endOrganDamage": [
+            { "condition": "Thrombocytopenia", "threshold": "Platelets <100 × 10^9/L" },
+            { "condition": "Renal insufficiency", "threshold": "Creatinine >1.1 mg/dL OR doubling" },
+            { "condition": "Liver dysfunction", "threshold": "AST/ALT >2x normal" },
+            { "condition": "Pulmonary edema", "threshold": "Clinical diagnosis" },
+            { "condition": "Cerebral symptoms", "threshold": "New headache (unresponsive) OR visual symptoms" }
+          ]
+        }
+      },
+      "outputModel": {
+        "structName": "PreeclampsiaOutputModel",
+        "fields": {
+          "category": { "type": "String", "description": "e.g., 'Preeclampsia', 'Preeclampsia with Severe Features', 'Gestational Hypertension'" },
+          "bpCriteriaMet": { "type": "Bool" },
+          "proteinuriaPresent": { "type": "Bool" },
+          "endOrganDamagePresent": { "type": "Bool" },
+          "severeFeatures": { "type": "Bool", "description": "true if SBP ≥160 or DBP ≥110 or severe end-organ damage" },
+          "endOrganDamageList": { "type": "[String]?", "condition": "if endOrganDamagePresent == true" },
+          "proteinuriaMethod": { "type": "String", "values": ["24hr urine", "P/C ratio", "dipstick", "not applicable"] },
+          "recommendedNextStep": { "type": "String", "description": "e.g., 'Antihypertensive therapy, delivery planning, maternal-fetal medicine referral'" }
+        },
+        "constraints": ["deterministic", "renderable", "safe"]
+      },
+      "crisisRules": {
+        "thresholds": {
+          "sbp": "≥160",
+          "dbp": "≥110",
+          "note": "Severe hypertension can be confirmed within minutes (not 4 hours)"
+        },
+        "symptomsToAsk": [
+          "Severe headache unresponsive to medication",
+          "Visual changes (blurred vision, spots, photophobia)",
+          "Upper abdominal pain (especially RUQ)",
+          "Shortness of breath (pulmonary edema)",
+          "Nausea/vomiting (severe features)"
+        ],
+        "escalationLogic": {
+          "ifAnySymptomPresent": "Immediate maternal-fetal medicine consult, consider delivery, IV antihypertensives, magnesium sulfate for seizure prophylaxis",
+          "ifNoSymptoms": "Monitor closely, initiate antihypertensive therapy, plan delivery at 37 weeks or sooner based on severity"
+        },
+        "appDisplay": {
+          "screenType": "High risk alert with severe feature warnings",
+          "button": "Escalate to MFM / Emergency Delivery Protocol",
+          "behavior": "Trigger severe preeampsia protocol, do not delay for repeat measurements"
+        }
+      },
+      "nextStepRouting": {
+        "providerSuggestion": "Refer to Maternal-Fetal Medicine or Obstetric Emergency",
+        "followUpTiming": "Monitor BP every 4-6 hours, daily proteinuria and labs",
+        "repeatMeasurement": "Repeat BP within minutes for severe range, otherwise 4 hours for confirmation",
+        "navigatorEscalation": "Page OB provider immediately if severe features present",
+        "documentation": "Log gestational age, BP readings, proteinuria method, end-organ assessment to maternal health record"
+      },
+      "tags": {
+        "acute": true,
+        "chronic": false,
+        "screening": true,
+        "diagnosis": true,
+        "management": false,
+        "priority": "high",
+        "topic": "maternal_health"
+      }
+    }
+  }
+}

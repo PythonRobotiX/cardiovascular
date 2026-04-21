@@ -1,0 +1,112 @@
+{
+  "moduleTemplate": {
+    "name": "Prevention_of_HF_in_Hypertension",
+    "sections": {
+      "purpose": {
+        "clinicalProblem": {
+          "clinicalIntent": "Prevent heart failure (HF) in adults with hypertension through blood pressure control",
+          "whenToUse": "Hypertension management, HF prevention screening, initial diagnosis of hypertension",
+          "decisionOrAction": "SBP target <130 mm Hg and DBP target <80 mm Hg to lower HF risk"
+        }
+      },
+      "userFlow": {
+        "navigationPath": [
+          { "view": "HFPreventionStartView", "purpose": "Entry point for HF prevention recommendations" },
+          { "view": "BPAssessmentView", "purpose": "Collect current SBP and DBP readings" },
+          { "view": "TargetComparisonView", "purpose": "Compare readings against SBP <130 and DBP <80 targets" },
+          { "view": "COR_LOE_DisplayView", "purpose": "Show COR 1 + LOE B-R/B-NR classification" },
+          { "view": "RecommendationDetailView", "purpose": "Display specific recommendation text" },
+          { "view": "EvidenceSummaryView", "purpose": "Show evidence quality and source" },
+          { "view": "ActionPlanView", "purpose": "Generate treatment adjustment recommendations" },
+          { "view": "DocumentationView", "purpose": "Log recommendation application to patient record" }
+        ]
+      },
+      "inputDataModel": {
+        "structName": "HF_Prevention_InputModel",
+        "requiredFields": {
+          "systolicBP": { "type": "Int?", "validation": "70-250" },
+          "diastolicBP": { "type": "Int?", "validation": "40-150" },
+          "hasHypertension": { "type": "Bool?", "validation": "Must be true for this module" }
+        },
+        "optionalFields": {
+          "age": { "type": "Int?", "options": "18-120" },
+          "priorHF": { "type": "Bool?", "options": ["true", "false"] },
+          "onAntihypertensives": { "type": "Bool?" }
+        },
+        "validationRules": [
+          "Patient must have diagnosed hypertension",
+          "SBP and DBP must be within valid ranges",
+          "Exclude patients with existing HF diagnosis"
+        ]
+      },
+      "logicEngine": {
+        "rules": [
+          "Check if SBP < 130 mm Hg",
+          "Check if DBP < 80 mm Hg",
+          "If SBP ≥130 → recommend intensifying therapy to achieve <130",
+          "If DBP ≥80 → recommend intensifying therapy to achieve <80",
+          "Apply COR 1 (STRONG): Benefit >>> Risk",
+          "Apply LOE B-R for SBP recommendation (moderate-quality RCT evidence)",
+          "Apply LOE B-NR for DBP recommendation (moderate-quality nonrandomized evidence)",
+          "If both targets met → document HF risk reduction achieved"
+        ],
+        "thresholdsExample": {
+          "categories": [
+            { "name": "SBP Target Met", "threshold": "<130", "action": "Maintain therapy, continue monitoring" },
+            { "name": "SBP Target Not Met", "threshold": "≥130", "action": "Intensify antihypertensive therapy" },
+            { "name": "DBP Target Met", "threshold": "<80", "action": "Maintain therapy, continue monitoring" },
+            { "name": "DBP Target Not Met", "threshold": "≥80", "action": "Intensify antihypertensive therapy" },
+            { "name": "HF Risk", "calculation": "Lower risk when both SBP and DBP targets achieved" }
+          ]
+        }
+      },
+      "outputModel": {
+        "structName": "HF_Prevention_OutputModel",
+        "fields": {
+          "category": { "type": "String", "description": "'Heart Failure Prevention Recommendation'" },
+          "sbpTargetMet": { "type": "Bool", "description": "true if SBP <130" },
+          "dbpTargetMet": { "type": "Bool", "description": "true if DBP <80" },
+          "recommendationText": { "type": "String", "description": "Full recommendation with COR and LOE" },
+          "cor": { "type": "String", "values": ["1"] },
+          "loe_sbp": { "type": "String", "values": ["B-R"] },
+          "loe_dbp": { "type": "String", "values": ["B-NR"] },
+          "actionRequired": { "type": "String", "description": "e.g., 'Intensify therapy to achieve SBP <130 and DBP <80'" },
+          "hfRiskReduction": { "type": "String", "description": "Lowered risk of developing HF" }
+        },
+        "constraints": ["deterministic", "renderable", "safe"]
+      },
+      "crisisRules": {
+        "thresholds": {
+          "sbp": "N/A - prevention recommendation, not crisis management",
+          "dbp": "N/A"
+        },
+        "symptomsToAsk": [],
+        "escalationLogic": {
+          "ifAnySymptomPresent": "N/A",
+          "ifNoSymptoms": "N/A"
+        },
+        "appDisplay": {
+          "screenType": "Standard guideline recommendation display",
+          "button": "N/A",
+          "behavior": "Normal routing for prevention guidance"
+        }
+      },
+      "nextStepRouting": {
+        "providerSuggestion": "For patients not meeting targets: consider medication adjustment, lifestyle modifications, or referral to hypertension specialist",
+        "followUpTiming": "Repeat BP measurement in 1-3 months or per hypertension follow-up schedule",
+        "repeatMeasurement": "Confirm BP control with multiple readings or ambulatory monitoring",
+        "navigatorEscalation": "Flag patients with persistent SBP ≥130 or DBP ≥80 despite maximal therapy",
+        "documentation": "Log BP targets and HF prevention recommendation to patient record"
+      },
+      "tags": {
+        "acute": false,
+        "chronic": true,
+        "screening": true,
+        "diagnosis": false,
+        "management": true,
+        "priority": "high",
+        "topic": "heart_failure_prevention"
+      }
+    }
+  }
+}

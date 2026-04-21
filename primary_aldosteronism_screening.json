@@ -1,0 +1,144 @@
+{
+  "moduleTemplate": {
+    "name": "Primary_Aldosteronism_Screening_Recommendations",
+    "sections": {
+      "purpose": {
+        "clinicalProblem": {
+          "clinicalIntent": "Increase detection, diagnosis, and specific targeted therapy for primary aldosteronism in hypertensive patients",
+          "whenToUse": "Hypertension evaluation, resistant hypertension workup, adrenal mass incidental finding, young stroke evaluation",
+          "decisionOrAction": "Screening eligibility determination + biochemical testing + specialist referral"
+        }
+      },
+      "userFlow": {
+        "navigationPath": [
+          { "view": "PAStartView", "purpose": "Entry point for primary aldosteronism screening" },
+          { "view": "RiskFactorAssessmentView", "purpose": "Identify qualifying conditions (resistant HTN, hypokalemia, OSA, adrenal mass, family history, young stroke)" },
+          { "view": "ScreeningIndicationView", "purpose": "Determine if COR 1 or COR 2b criteria met" },
+          { "view": "MedicationReviewView", "purpose": "Review antihypertensives (continue most except MRAs)" },
+          { "view": "BiochemicalTestingView", "purpose": "Order plasma aldosterone, renin activity, ARR ratio" },
+          { "view": "ResultInterpretationView", "purpose": "Interpret screening test results" },
+          { "view": "SpecialistReferralView", "purpose": "Refer to hypertension specialist or endocrinologist if positive or continued suspicion" },
+          { "view": "DocumentationView", "purpose": "Log screening results and referral status" }
+        ]
+      },
+      "inputDataModel": {
+        "structName": "PrimaryAldosteronismInputModel",
+        "requiredFields": {
+          "hasHypertension": { "type": "Bool?", "validation": "Required for screening eligibility" },
+          "hypertensionStage": { "type": "String?", "validation": "Stage 1 or Stage 2" }
+        },
+        "optionalFields": {
+          "hasResistantHypertension": { "type": "Bool?", "description": "Regardless of hypokalemia presence" },
+          "hasHypokalemia": { "type": "Bool?", "options": ["spontaneous", "diuretic-induced"] },
+          "hasOSA": { "type": "Bool?" },
+          "hasAdrenalMass": { "type": "Bool?", "description": "Incidentally discovered" },
+          "hasFamilyHistoryEarlyOnsetHTN": { "type": "Bool?" },
+          "hasYoungStroke": { "type": "Bool?", "description": "Age <40 years" },
+          "currentAntihypertensives": { "type": "[String]?", "description": "List of medications" },
+          "onMRA": { "type": "Bool?", "description": "Mineralocorticoid receptor antagonist" },
+          "suppressedPlasmaRenin": { "type": "Bool?" },
+          "disproportionateTargetOrganDamage": { "type": "Bool?" }
+        },
+        "validationRules": [
+          "At least one qualifying condition for COR 1 screening",
+          "Stage 2 hypertension alone qualifies for COR 2b",
+          "Continue most antihypertensives except MRAs prior to screening"
+        ]
+      },
+      "logicEngine": {
+        "rules": [
+          "IF (resistant HTN OR hypokalemia OR OSA OR adrenal mass OR family history early-onset HTN OR young stroke <40 years) AND hypertension present → COR 1, LOE C-EO → Recommend screening",
+          "ELSE IF stage 2 hypertension present → COR 2b, LOE C-EO → May consider screening",
+          "IF screening indicated → Order plasma aldosterone, renin activity, ARR ratio (COR 1, LOE C-LD)",
+          "IF screening indicated → Continue most antihypertensives except MRAs (COR 1, LOE C-EO)",
+          "IF positive screening OR suppressed renin OR disproportionate target organ damage → Refer to specialist (COR 1, LOE C-EO)"
+        ],
+        "thresholdsExample": {
+          "recommendations": [
+            {
+              "cor": "Class 1",
+              "loe": "C-EO",
+              "condition": "Hypertension + (resistant HTN OR hypokalemia OR OSA OR adrenal mass OR family history early-onset HTN OR young stroke <40 years)",
+              "action": "Screening for primary aldosteronism recommended",
+              "goal": "Increase detection, diagnosis, and targeted therapy"
+            },
+            {
+              "cor": "Class 2b",
+              "loe": "C-EO",
+              "condition": "Stage 2 hypertension (without other qualifying conditions)",
+              "action": "Screening may be considered",
+              "goal": "Increase detection, diagnosis, and targeted therapy"
+            },
+            {
+              "cor": "Class 1",
+              "loe": "C-LD",
+              "condition": "Indication for screening present",
+              "action": "Use plasma aldosterone, renin activity, ARR ratio for initial screening",
+              "goal": "Assess biochemical evidence of primary aldosteronism"
+            },
+            {
+              "cor": "Class 1",
+              "loe": "C-EO",
+              "condition": "Indication for screening present",
+              "action": "Continue most antihypertensives (except MRAs) prior to screening",
+              "goal": "Minimize barriers to or delays in screening"
+            },
+            {
+              "cor": "Class 1",
+              "loe": "C-EO",
+              "condition": "Hypertension + positive screening OR continued suspicion (suppressed renin OR disproportionate target organ damage)",
+              "action": "Refer to hypertension specialist or endocrinologist",
+              "goal": "Further evaluation and treatment"
+            }
+          ]
+        }
+      },
+      "outputModel": {
+        "structName": "PrimaryAldosteronismOutputModel",
+        "fields": {
+          "category": { "type": "String", "description": "e.g., 'Screening Recommended - COR 1'" },
+          "cor": { "type": "String", "values": ["Class 1", "Class 2b"] },
+          "loe": { "type": "String", "values": ["C-EO", "C-LD"] },
+          "recommendation": { "type": "String", "description": "Full recommendation text" },
+          "qualifyingConditions": { "type": "[String]", "description": "List of conditions that triggered recommendation" },
+          "screeningIndicated": { "type": "Bool" },
+          "referralNeeded": { "type": "Bool" },
+          "medicationAdjustments": { "type": "String", "description": "e.g., 'Continue most antihypertensives except MRAs'" }
+        },
+        "constraints": ["deterministic", "renderable", "safe"]
+      },
+      "crisisRules": {
+        "thresholds": {
+          "sbp": "N/A",
+          "dbp": "N/A"
+        },
+        "symptomsToAsk": [],
+        "escalationLogic": {
+          "ifAnySymptomPresent": "N/A - screening protocol only",
+          "ifNoSymptoms": "N/A"
+        },
+        "appDisplay": {
+          "screenType": "Standard clinical decision support",
+          "button": "N/A",
+          "behavior": "Normal routing to screening or referral"
+        }
+      },
+      "nextStepRouting": {
+        "providerSuggestion": "Follow COR 1 or COR 2b screening recommendation based on patient profile",
+        "followUpTiming": "Complete screening within 4-6 weeks of indication identification",
+        "repeatMeasurement": "Repeat ARR if initial test indeterminate or if clinical status changes",
+        "navigatorEscalation": "Flag positive screening for specialist referral within 2 weeks",
+        "documentation": "Log qualifying conditions, screening results, ARR ratio, and referral status"
+      },
+      "tags": {
+        "acute": false,
+        "chronic": true,
+        "screening": true,
+        "diagnosis": true,
+        "management": true,
+        "priority": "high",
+        "topic": "primary_aldosteronism"
+      }
+    }
+  }
+}

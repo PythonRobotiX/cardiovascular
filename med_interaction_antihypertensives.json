@@ -1,0 +1,128 @@
+{
+  "moduleTemplate": {
+    "name": "Pharmacokinetic_DDI_Antihypertensives",
+    "sections": {
+      "purpose": {
+        "clinicalProblem": {
+          "clinicalIntent": "Identify and manage pharmacokinetic drug-drug interactions between antihypertensives and other medications",
+          "whenToUse": "Medication reconciliation, prescribing new medications, adverse event investigation",
+          "decisionOrAction": "Interaction classification + mitigation strategy recommendation"
+        }
+      },
+      "userFlow": {
+        "navigationPath": [
+          { "view": "DDIStartView", "purpose": "Entry point for DDI checking" },
+          { "view": "DrugSelectionView", "purpose": "Select antihypertensive and potential interacting drug" },
+          { "view": "MechanismView", "purpose": "Display interaction mechanism (absorption/metabolism/elimination)" },
+          { "view": "ClinicalEffectView", "purpose": "Show clinical effect and risk level" },
+          { "view": "MitigationView", "purpose": "Display mitigation strategies if available" },
+          { "view": "RiskAssessmentView", "purpose": "Assess patient-specific risk factors" },
+          { "view": "RecommendationView", "purpose": "Provide clinical recommendation" },
+          { "view": "DocumentationView", "purpose": "Log interaction to clinical record" }
+        ]
+      },
+      "inputDataModel": {
+        "structName": "PharmacokineticDDI_InputModel",
+        "requiredFields": {
+          "antihypertensive": { "type": "String?", "validation": "Must be valid antihypertensive medication" },
+          "interactingDrug": { "type": "String?", "validation": "Must be valid interacting drug" }
+        },
+        "optionalFields": {
+          "mechanism": { "type": "String?", "options": ["absorption", "metabolism", "elimination"] },
+          "enzymeSystem": { "type": "String?", "options": ["CYP2D6", "CYP3A4", "P-gp", "other"] },
+          "timingOfDoses": { "type": "String?" }
+        },
+        "validationRules": [
+          "Both drugs must be specified",
+          "Mechanism must match known interaction type",
+          "Mitigation timing must be feasible (e.g., 3-hour separation)"
+        ]
+      },
+      "logicEngine": {
+        "rules": [
+          "Classify interaction by mechanism: absorption, metabolism (CYP enzyme), or elimination (renal/P-gp)",
+          "Determine clinical effect direction: increased or decreased drug concentration",
+          "Assess risk severity based on clinical effect",
+          "Apply mitigation strategy if available (dose separation, dose adjustment, monitoring)",
+          "Flag high-risk interactions (e.g., lithium + thiazide, dabigatran + verapamil)"
+        ],
+        "thresholdsExample": {
+          "interactions": {
+            "absorption": [
+              { "bpDrug": "Thiazide-type diuretics", "interactingDrug": "Cholestyramine", "effect": "Decreased absorption → reduced BP lowering", "mitigation": null },
+              { "bpDrug": "Amlodipine, furosemide, metoprolol, carvedilol, bisoprolol, nebivolol, telmisartan", "interactingDrug": "Potassium binder (patiromer)", "effect": "Decreased absorption → reduced BP lowering", "mitigation": "Administer antihypertensives at least 3 h before or after potassium binder" },
+              { "bpDrug": "Furosemide", "interactingDrug": "Potassium binder (sodium zirconium cyclosilicate)", "effect": "Increased absorption → increased diuresis or hypokalemia risk", "mitigation": "Separate administration by 2 h" },
+              { "bpDrug": "Methyldopa", "interactingDrug": "Iron salts", "effect": "Decreased absorption → reduced BP lowering", "mitigation": null }
+            ],
+            "metabolism": [
+              { "bpDrug": "Bisoprolol, carvedilol, metoprolol", "interactingDrug": "CYP2D6 inhibitors (amiodarone, cimetidine, diphenhydramine, fluoxetine, paroxetine, terbinafine)", "effect": "Increased BB concentration → hypotension, bradycardia", "enzyme": "CYP2D6" },
+              { "bpDrug": "Diltiazem, verapamil", "interactingDrug": "CYP3A4 inhibitors (clarithromycin, erythromycin, itraconazole, ketoconazole)", "effect": "Increased CCB concentration → hypotension, bradycardia", "enzyme": "CYP3A4" },
+              { "bpDrug": "Diltiazem, verapamil", "interactingDrug": "CYP3A4 inducers (carbamazepine, phenobarbital, phenytoin, St. John's Wort, rifampin)", "effect": "Decreased CCB concentration → reduced BP/pulse lowering", "enzyme": "CYP3A4" },
+              { "bpDrug": "CYP3A4 inhibition (amlodipine, verapamil, diltiazem)", "interactingDrug": "Tacrolimus, cyclosporine", "effect": "Increased calcineurin inhibitor → renal impairment risk", "enzyme": "CYP3A4" },
+              { "bpDrug": "CYP3A4 inhibition (amlodipine, verapamil, diltiazem)", "interactingDrug": "Dabigatran, rivaroxaban", "effect": "Increased concentration → bleeding risk", "enzyme": "CYP3A4" },
+              { "bpDrug": "CYP3A4 inhibition (amlodipine, verapamil, diltiazem)", "interactingDrug": "Atorvastatin, simvastatin", "effect": "Increased statin concentration → myopathy risk", "enzyme": "CYP3A4" },
+              { "bpDrug": "CYP3A4 inhibition (amlodipine, verapamil, diltiazem)", "interactingDrug": "Colchicine", "effect": "Increased colchicine → neuromuscular toxicity", "enzyme": "CYP3A4" },
+              { "bpDrug": "CYP3A4 inhibition (amlodipine, verapamil, diltiazem)", "interactingDrug": "Eplerenone", "effect": "Increased hypotension + hyperkalemia risk", "enzyme": "CYP3A4", "note": "May allow lower eplerenone dose → potential productive interaction" }
+            ],
+            "elimination": [
+              { "bpDrug": "Lithium", "interactingDrug": "Thiazide-type diuretics, RAS blockers", "effect": "Reduced lithium clearance → lithium toxicity risk", "mechanism": "Renal clearance reduction" },
+              { "bpDrug": "Verapamil", "interactingDrug": "Dabigatran", "effect": "Reduced P-gp efflux → increased dabigatran → bleeding risk", "mechanism": "P-gp inhibition" },
+              { "bpDrug": "Verapamil, carvedilol", "interactingDrug": "Digoxin", "effect": "Increased digoxin levels (via P-gp inhibition)", "mechanism": "P-gp inhibition" }
+            ]
+          }
+        }
+      },
+      "outputModel": {
+        "structName": "PharmacokineticDDI_OutputModel",
+        "fields": {
+          "category": { "type": "String", "description": "e.g., 'CYP3A4-mediated metabolism interaction'" },
+          "mechanism": { "type": "String", "values": ["absorption", "metabolism", "elimination"] },
+          "clinicalEffect": { "type": "String", "description": "e.g., 'Increased BB concentration → bradycardia'" },
+          "riskLevel": { "type": "String", "values": ["low", "moderate", "high", "severe"] },
+          "mitigationStrategy": { "type": "String?", "description": "e.g., 'Separate doses by 3 hours'" },
+          "monitoringRecommendation": { "type": "String", "description": "e.g., 'Monitor BP, heart rate, and drug levels'" },
+          "isProductiveInteraction": { "type": "Bool", "description": "True if interaction may allow lower dosing (e.g., eplerenone + diltiazem)" }
+        },
+        "constraints": ["deterministic", "renderable", "safe"]
+      },
+      "crisisRules": {
+        "thresholds": {
+          "sbp": "N/A - DDI module",
+          "dbp": "N/A - DDI module"
+        },
+        "symptomsToAsk": [
+          "Bradycardia or heart block symptoms",
+          "Bleeding signs (bruising, blood in stool/urine)",
+          "Hypotension symptoms (dizziness, syncope)",
+          "Lithium toxicity symptoms (tremor, confusion, ataxia)",
+          "Myopathy symptoms (muscle pain, weakness, dark urine)"
+        ],
+        "escalationLogic": {
+          "ifAnySymptomPresent": "Consider holding interacting medications and urgent clinical evaluation",
+          "ifNoSymptoms": "Implement monitoring and mitigation strategy"
+        },
+        "appDisplay": {
+          "screenType": "Interaction alert with risk level",
+          "button": "Contact provider / Adjust medication timing",
+          "behavior": "Flag high-risk interactions before proceeding"
+        }
+      },
+      "nextStepRouting": {
+        "providerSuggestion": "Review medication list for DDI risks, adjust doses or timing as needed",
+        "followUpTiming": "Reassess when medications are added, changed, or discontinued",
+        "repeatMeasurement": "Monitor BP, heart rate, and relevant drug levels",
+        "navigatorEscalation": "Flag severe interactions (lithium + thiazide, dabigatran + verapamil) for care team review",
+        "documentation": "Log interaction, mitigation strategy, and monitoring plan"
+      },
+      "tags": {
+        "acute": false,
+        "chronic": true,
+        "screening": true,
+        "diagnosis": false,
+        "management": true,
+        "priority": "high",
+        "topic": "pharmacokinetics_drug_interactions"
+      }
+    }
+  }
+}

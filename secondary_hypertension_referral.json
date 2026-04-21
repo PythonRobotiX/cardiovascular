@@ -1,0 +1,110 @@
+{
+  "moduleTemplate": {
+    "name": "Secondary_Hypertension_Referral",
+    "sections": {
+      "purpose": {
+        "clinicalProblem": {
+          "clinicalIntent": "Guide referral decisions for adults with positive screening tests for secondary hypertension",
+          "whenToUse": "After positive screening test for secondary hypertension (renal artery stenosis, primary aldosteronism, pheochromocytoma, etc.)",
+          "decisionOrAction": "Referral to hypertension specialist for diagnostic confirmation and treatment"
+        }
+      },
+      "userFlow": {
+        "navigationPath": [
+          { "view": "SecondaryHTNScreeningView", "purpose": "Display positive screening test result" },
+          { "view": "SpecialistReferralView", "purpose": "Present referral recommendation" },
+          { "view": "SpecialistTypeSelectionView", "purpose": "Identify appropriate hypertension subspecialist" },
+          { "view": "ReferralLogisticsView", "purpose": "Provide referral process steps" },
+          { "view": "PatientEducationView", "purpose": "Explain rationale for specialist referral" },
+          { "view": "ReferralConfirmationView", "purpose": "Confirm referral action taken" },
+          { "view": "FollowUpScheduleView", "purpose": "Set diagnostic confirmation timeline" },
+          { "view": "DocumentationView", "purpose": "Log referral to health record" }
+        ]
+      },
+      "inputDataModel": {
+        "structName": "SecondaryHTNReferralInputModel",
+        "requiredFields": {
+          "positiveScreeningTest": { "type": "Bool?", "validation": "Must be true for referral" },
+          "secondaryHypertensionType": { "type": "String?", "validation": "Must identify specific form (renal, endocrine, etc.)" }
+        },
+        "optionalFields": {
+          "screeningTestDetails": { "type": "String?", "options": ["test name", "date performed", "result values"] },
+          "symptomsPresent": { "type": "[String]?", "options": ["early onset", "resistant hypertension", "hypokalemia", "episodic hypertension"] },
+          "priorTreatments": { "type": "[String]?", "options": ["failed medications", "current regimen"] }
+        },
+        "validationRules": [
+          "Positive screening test must be documented",
+          "Secondary hypertension type should be specified when possible",
+          "Referral appropriateness verified"
+        ]
+      },
+      "logicEngine": {
+        "rules": [
+          "Confirm positive screening test for secondary hypertension",
+          "Identify specific form of secondary hypertension suspected",
+          "Determine appropriate specialist type (nephrologist, endocrinologist, cardiologist)",
+          "Generate referral recommendation based on COR 2a (MODERATE strength)",
+          "Apply LOE C-EO (expert opinion based consensus)",
+          "Prioritize diagnostic confirmation before treatment",
+          "Coordinate with primary care for comanagement"
+        ],
+        "thresholdsExample": {
+          "categories": [
+            { "name": "COR 2a", "strength": "MODERATE", "benefit_risk": ">>", "phrasing": "Is reasonable" },
+            { "name": "LOE C-EO", "quality": "Expert Opinion", "source": "Consensus of expert opinion based on clinical experience" }
+          ]
+        }
+      },
+      "outputModel": {
+        "structName": "SecondaryHTNReferralOutputModel",
+        "fields": {
+          "category": { "type": "String", "description": "COR 2a | LOE C-EO" },
+          "recommendation": { "type": "String", "description": "In adults who have a positive screening test for a form of secondary hypertension, referral to a clinician who has expertise in that form of hypertension is reasonable for diagnostic confirmation and treatment." },
+          "corStrength": { "type": "String", "values": ["MODERATE"] },
+          "loeDescription": { "type": "String", "description": "Level C-EO: Consensus of expert opinion based on clinical experience" },
+          "suggestedPhrasing": { "type": "String", "description": "Is reasonable" },
+          "referralNeeded": { "type": "Bool", "description": "true" },
+          "specialistType": { "type": "String", "description": "Based on secondary hypertension form" },
+          "actionableStep": { "type": "String", "description": "Refer to hypertension specialist for diagnostic confirmation" }
+        },
+        "constraints": ["deterministic", "renderable", "safe"]
+      },
+      "crisisRules": {
+        "thresholds": {
+          "sbp": "N/A - not a crisis module",
+          "dbp": "N/A"
+        },
+        "symptomsToAsk": [
+          "Malignant hypertension",
+          "Acute kidney injury",
+          "Hypertensive emergency symptoms"
+        ],
+        "escalationLogic": {
+          "ifAnySymptomPresent": "Emergency referral rather than routine specialist referral",
+          "ifNoSymptoms": "Proceed with standard specialist referral"
+        },
+        "appDisplay": {
+          "screenType": "Standard clinical recommendation display",
+          "button": "Generate referral order",
+          "behavior": "Normal routing to specialist scheduling"
+        }
+      },
+      "nextStepRouting": {
+        "providerSuggestion": "Refer to hypertension specialist within 4-6 weeks for diagnostic confirmation",
+        "followUpTiming": "Follow up after specialist evaluation (typically 1-3 months)",
+        "repeatMeasurement": "Monitor blood pressure while awaiting specialist appointment",
+        "navigatorEscalation": "Flag if referral not completed within recommended timeframe",
+        "documentation": "Log screening test results, referral order, and specialist appointment scheduled"
+      },
+      "tags": {
+        "acute": false,
+        "chronic": true,
+        "screening": true,
+        "diagnosis": true,
+        "management": true,
+        "priority": "medium",
+        "topic": "secondary_hypertension"
+      }
+    }
+  }
+}

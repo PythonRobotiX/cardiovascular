@@ -1,0 +1,121 @@
+{
+  "moduleTemplate": {
+    "name": "Initial_Monotherapy_vs_Combination_Therapy",
+    "sections": {
+      "purpose": {
+        "clinicalProblem": {
+          "clinicalIntent": "Guide clinicians on whether to start with one drug or two drugs for hypertension based on BP stage.",
+          "whenToUse": "At initial diagnosis of hypertension, when deciding on first-line pharmacotherapy.",
+          "decisionOrAction": "Select between initial combination therapy (SPC) or initial monotherapy with titration."
+        }
+      },
+      "userFlow": {
+        "navigationPath": [
+          { "view": "HypertensionStartView", "purpose": "Entry point for HTN management module." },
+          { "view": "BPClassificationView", "purpose": "Classify BP as Stage 1 or Stage 2 based on SBP/DBP." },
+          { "view": "TherapySelectionView", "purpose": "Present the specific recommendation based on stage." },
+          { "view": "DrugClassSelectionView", "purpose": "Select appropriate first-line agents (ACEi, ARB, CCB, Thiazide)." },
+          { "view": "CombinationCheckView", "purpose": "If Stage 2, recommend SPC; check for contraindications." },
+          { "view": "SafetyCheckView", "purpose": "Check for dual RAS blockade (ACEi+ARB) to flag harm." },
+          { "view": "PrescriptionView", "purpose": "Generate prescription or SPC order." },
+          { "view": "FollowUpView", "purpose": "Schedule follow-up for titration or BP check." }
+        ]
+      },
+      "inputDataModel": {
+        "structName": "TherapyInitiationInputModel",
+        "requiredFields": {
+          "systolic": { "type": "Int?", "validation": "70-250" },
+          "diastolic": { "type": "Int?", "validation": "40-150" }
+        },
+        "optionalFields": {
+          "previousDrugs": { "type": "[String]?", "options": ["ACEi", "ARB", "CCB", "Thiazide", "Renin Inhibitor"] },
+          "isSinglePillPreference": { "type": "Bool?" }
+        },
+        "validationRules": [
+          "systolic: 70-250",
+          "diastolic: 40-150",
+          "systolic >= diastolic"
+        ]
+      },
+      "logicEngine": {
+        "rules": [
+          "If SBP >= 140 AND DBP >= 90 (Stage 2): Apply COR 1 (LOE B-R) -> Recommend 2 agents (SPC).",
+          "If SBP 130-139 AND DBP 80-89 (Stage 1): Apply COR 2a (LOE C-EO) -> Recommend 1 agent initially.",
+          "If user tries to combine ACEi + ARB + Renin Inhibitor: Trigger COR 3: Harm (LOE A) Alert."
+        ],
+        "thresholdsExample": {
+          "categories": [
+            { 
+              "name": "Stage 2 Hypertension - Initial Combination Therapy", 
+              "condition": "SBP ≥140 and DBP ≥90",
+              "cor": "1",
+              "loe": "B-R",
+              "action": "Initiate 2 first-line agents of different classes, ideally SPC",
+              "reasoning": "Improves BP control and adherence"
+            },
+            { 
+              "name": "Stage 1 Hypertension - Initial Monotherapy", 
+              "condition": "SBP 130-139 and DBP 80-89",
+              "cor": "2a",
+              "loe": "C-EO",
+              "action": "Initiate single first-line agent",
+              "reasoning": "Reasonable to start with one, then titrate/add as needed"
+            },
+            { 
+              "name": "Harmful Combination", 
+              "condition": "ACEi + ARB + Renin Inhibitor",
+              "cor": "3: Harm",
+              "loe": "A",
+              "action": "NOT RECOMMENDED",
+              "reasoning": "Potential for harm (renal failure, hyperkalemia)"
+            }
+          ]
+        }
+      },
+      "outputModel": {
+        "structName": "TherapyInitiationOutputModel",
+        "fields": {
+          "category": { "type": "String", "description": "e.g., 'Stage 2 Hypertension - Initial Combination Therapy'" },
+          "cor": { "type": "String", "values": ["1", "2a", "3: Harm"] },
+          "loe": { "type": "String", "values": ["B-R", "C-EO", "A"] },
+          "recommendedNextStep": { "type": "String", "description": "e.g., 'Prescribe SPC (Amlodipine/Lisinopril)'" },
+          "crisis": { "type": "Bool", "value": false },
+          "crisisSymptoms": { "type": "[String]?", "value": null }
+        },
+        "constraints": ["deterministic", "renderable", "safe"]
+      },
+      "crisisRules": {
+        "thresholds": {
+          "sbp": "N/A",
+          "dbp": "N/A"
+        },
+        "symptomsToAsk": [],
+        "escalationLogic": {
+          "ifAnySymptomPresent": "N/A",
+          "ifNoSymptoms": "N/A"
+        },
+        "appDisplay": {
+          "screenType": "Standard alert for drug interaction",
+          "button": "Warning icon for COR 3: Harm",
+          "behavior": "Block prescription of ACEi+ARB combination"
+        }
+      },
+      "nextStepRouting": {
+        "providerSuggestion": "For Stage 1: Start low-dose monotherapy. For Stage 2: Start SPC.",
+        "followUpTiming": "Follow up in 2-4 weeks to check BP control and potassium/creatinine if on RAS blockers.",
+        "repeatMeasurement": "Confirm BP control at follow up; titrate if needed.",
+        "navigatorEscalation": "Flag if ACEi+ARB combination is ordered (COR 3: Harm).",
+        "documentation": "Log initial therapy choice (Monotherapy vs SPC) and COR/LOE assignment."
+      },
+      "tags": {
+        "acute": false,
+        "chronic": true,
+        "screening": false,
+        "diagnosis": false,
+        "management": true,
+        "priority": "high",
+        "topic": "hypertension_pharmacotherapy"
+      }
+    }
+  }
+}

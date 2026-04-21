@@ -1,0 +1,94 @@
+{
+  "moduleTemplate": {
+    "name": "Antihypertensive_Medication_Adherence_Strategies",
+    "sections": {
+      "purpose": {
+        "clinicalProblem": {
+          "clinicalIntent": "To improve medication adherence in adults with hypertension through evidence-based prescribing and intervention strategies.",
+          "whenToUse": "When prescribing antihypertensive medication, or when managing a patient with suboptimal blood pressure control potentially related to non-adherence.",
+          "decisionOrAction": "Select a specific adherence strategy (once-daily dosing, SPC, or reminder/education tools) based on its COR and LOE."
+        }
+      },
+      "userFlow": {
+        "navigationPath": [
+          { "view": "AdherenceStartView", "purpose": "Entry point for adherence strategy selection" },
+          { "view": "StrategySelectionView", "purpose": "User selects between 'Once Daily', 'SPC', or 'Reminder/Education' strategies" },
+          { "view": "RecommendationDetailView", "purpose": "Display the COR, LOE, and specific recommendation text for the chosen strategy" },
+          { "view": "ClinicalConsiderationsView", "purpose": "Show practical tips for implementing the chosen strategy" },
+          { "view": "ApplicationConfirmationView", "purpose": "User confirms the strategy will be applied to the patient's plan" }
+        ]
+      },
+      "inputDataModel": {
+        "structName": "AdherenceStrategyInputModel",
+        "requiredFields": {
+          "strategyType": { "type": "String?", "validation": "Must be one of: once_daily, single_pill_combination, reminder_education" }
+        },
+        "optionalFields": {
+          "currentRegimen": { "type": "String?", "description": "e.g., 'twice daily', 'multiple separate pills'" },
+          "bpControlStatus": { "type": "String?", "options": ["controlled", "uncontrolled"] }
+        },
+        "validationRules": [
+          "strategyType must match one of three defined strategies"
+        ]
+      },
+      "logicEngine": {
+        "rules": [
+          "If strategyType is 'once_daily', retrieve COR 1, LOE B-R recommendation",
+          "If strategyType is 'single_pill_combination', retrieve COR 1, LOE B-R recommendation",
+          "If strategyType is 'reminder_education', retrieve COR 2a, LOE B-R recommendation",
+          "Display the exact recommendation text"
+        ],
+        "thresholdsExample": {
+          "categories": [
+            { "name": "Once Daily Dosing", "cor": "1", "loe": "B-R", "recommendation": "In adults with hypertension, antihypertensive medication dosing once daily rather than multiple times daily is beneficial to improve medication adherence." },
+            { "name": "Single Pill Combination (SPC)", "cor": "1", "loe": "B-R", "recommendation": "In adults with hypertension, the use of a SPC to reduce pill burden rather than taking separate pills is effective to improve medication adherence." },
+            { "name": "Reminder Aids & Educational Interventions", "cor": "2a", "loe": "B-R", "recommendation": "In adults with hypertension, use of medication reminder aids and educational or self-management interventions can be useful to improve medication adherence." }
+          ]
+        }
+      },
+      "outputModel": {
+        "structName": "AdherenceStrategyOutputModel",
+        "fields": {
+          "category": { "type": "String", "description": "The selected strategy name (e.g., 'Once Daily Dosing')" },
+          "cor": { "type": "String", "values": ["1", "2a"] },
+          "loe": { "type": "String", "values": ["B-R"] },
+          "recommendationText": { "type": "String", "description": "Full recommendation text" },
+          "strength": { "type": "String", "values": ["STRONG", "MODERATE"] }
+        },
+        "constraints": ["deterministic", "renderable", "safe"]
+      },
+      "crisisRules": {
+        "thresholds": {
+          "sbp": "N/A",
+          "dbp": "N/A"
+        },
+        "symptomsToAsk": [],
+        "escalationLogic": {
+          "ifAnySymptomPresent": "N/A - adherence strategies are not crisis interventions",
+          "ifNoSymptoms": "N/A"
+        },
+        "appDisplay": {
+          "screenType": "Standard recommendation display",
+          "button": "N/A",
+          "behavior": "Normal routing"
+        }
+      },
+      "nextStepRouting": {
+        "providerSuggestion": "Integrate the selected adherence strategy into the patient's antihypertensive treatment plan",
+        "followUpTiming": "Assess adherence and blood pressure response at next follow-up visit (e.g., 4-8 weeks)",
+        "repeatMeasurement": "Monitor BP at subsequent visits to evaluate effectiveness of the adherence strategy",
+        "navigatorEscalation": "If BP remains uncontrolled despite good adherence, consider alternative pharmacological approaches",
+        "documentation": "Document the adherence strategy recommended and provided to the patient"
+      },
+      "tags": {
+        "acute": false,
+        "chronic": true,
+        "screening": false,
+        "diagnosis": false,
+        "management": true,
+        "priority": "high",
+        "topic": "hypertension_medication_adherence"
+      }
+    }
+  }
+}
