@@ -1,140 +1,269 @@
-## Clinical Modules (JSON Specification)
+## Cardiovascular App
 
-This repository contains the JSON-based clinical modules used by the mobile app
-(iOS + Android). Each module follows a strict 8‑part structure that mirrors the
-clinical + engineering template used across all cardiovascular topics.
+A probabilistic, context-aware clinical reasoning system designed to model real-world medical decision-making over time.
 
-Each module includes:
+This system is not an EMR, and not a rules engine in isolation—it is a **multi-layer clinical cognition architecture** that integrates:
 
-1. Purpose  
-2. User Flow (screen-level)  
-3. Input Data Model  
-4. Logic Engine  
-5. Output Model  
-6. Crisis Rules  
-7. Next-Step Routing  
-8. Tags (metadata)
-
-Modules are stored as standalone JSON files and delivered to the app via the
-jsDelivr CDN.
+- patient state modeling
+- event-based reasoning
+- guideline-driven decision logic
+- causal inference
+- uncertainty tracking
+- continuous feedback learning
 
 ---
 
-## 📁 Repository Structure
+# ⚠️ Core Philosophy
 
-```
-clinical-modules/
-   modules/
-      htn.json
-      out_of_office_bp.json
-      lipids.json
-      heart_failure.json
-      arrhythmia.json
-      ascvd.json
-   schema/
-      module_schema.json
-   version.json
-```
+Traditional systems fail because they assume:
 
-- `modules/` contains one JSON file per clinical module  
-- `schema/` contains the JSON schema describing the 8‑part structure  
-- `version.json` tracks module versions for cache invalidation  
+- deterministic data
+- static patient states
+- linear decision trees
+
+This architecture assumes reality:
+
+> medicine is probabilistic, temporal, contradictory, and context-dependent
 
 ---
 
-## 🧩 Module Format (8-Part Template)
-
-Each JSON file in `modules/` follows the same structure:
+# 🧠 System Overview
 
 ```
-{
-  "module_name": "",
-  "purpose": { ... },
-  "user_flow": [ ... ],
-  "input_model": { ... },
-  "logic_engine": { ... },
-  "output_model": { ... },
-  "crisis_rules": { ... },
-  "next_step_routing": { ... },
-  "tags": { ... }
-}
-```
 
-This structure maps directly to the clinical template used internally.
+Clinical Data → Context → State → Domain Logic → Ontology → Event Reasoning
+→ Interpretation → Safety Prioritization → Care Orchestration → Decision Engine
+→ Execution → Feedback Loop → Updated State
+
+````
 
 ---
 
-## 🚀 Loading Modules via jsDelivr CDN
+# 🏗️ Architecture Layers
 
-Every JSON file in this repo is automatically available through the jsDelivr CDN.
+## 1. Clinical Data Ingestion Layer
+Raw clinical inputs enriched with metadata:
 
-**CDN URL format:**
+- vitals
+- labs
+- medications
+- symptoms
+- clinical events
 
-```
-https://cdn.jsdelivr.net/gh/<username>/<repo>/<path-to-file>
-```
-
-**Example:**
-
-```
-https://cdn.jsdelivr.net/gh/keyhan/clinical-modules/modules/htn.json
-```
-
-This URL is used by the mobile app to fetch the latest module definitions.
-
----
-
-## 📱 iOS Example (Swift)
-
-```swift
-let url = URL(string: "https://cdn.jsdelivr.net/gh/keyhan/clinical-modules/modules/htn.json")!
-let (data, _) = try await URLSession.shared.data(from: url)
-let module = try JSONDecoder().decode(Module.self, from: data)
-```
+Each input includes:
+- timestamp
+- source (device / clinician / patient / system)
+- confidence score
+- context validity
 
 ---
 
-## 🤖 Android Example (Kotlin)
+## 2. Patient Context Layer
+Defines *who the patient is physiologically and socially*:
 
-```kotlin
-val url = URL("https://cdn.jsdelivr.net/gh/keyhan/clinical-modules/modules/htn.json")
-val json = url.readText()
-val module = jsonAdapter.fromJson(json)
+- age / sex
+- baseline physiology
+- comorbidities
+- frailty
+- adherence behavior
+- socioeconomic constraints
+
+👉 This layer modifies interpretation of all downstream logic.
+
+---
+
+## 3. Clinical Core State & Event Store
+A probabilistic model of patient reality:
+
+- STATE: inferred current physiology (with confidence)
+- EVENTS: time-stamped clinical occurrences
+- uncertainty map across all variables
+
+---
+
+## 4. Domain Layer (Disease Models)
+Disease-specific probabilistic models:
+
+- Hypertension (HTN)
+- Heart Failure (HF)
+- Myocardial Infarction (MI)
+- Atrial Fibrillation (AF)
+- Chronic Kidney Disease (CKD)
+
+Outputs:
+- disease probability
+- severity score
+- progression trajectory
+- confidence-adjusted classification
+
+---
+
+## 5. Ontology + Knowledge System
+
+Split into three components:
+
+### A. Clinical Definitions
+Static medical meaning (guidelines, thresholds)
+
+### B. Knowledge Graph
+Relationships between concepts:
+- HTN → CKD risk ↑
+- NSAIDs → BP elevation
+
+### C. Causal Inference Layer
+Dynamic causality:
+- steroid use → BP elevation likely causal
+
+---
+
+## 6. Event Logic Layer
+Temporal reasoning engine:
+
+- trend detection
+- anomaly detection
+- episode clustering
+- signal vs noise separation
+
+---
+
+## 7. Contradiction Resolution Engine
+Handles conflicting clinical signals:
+
+Examples:
+- BP cuff vs ABPM mismatch
+- labs vs symptoms inconsistency
+- device vs clinical observation conflict
+
+Outputs reconciled clinical truth model.
+
+---
+
+## 8. Clinical Interpretation Layer
+Probabilistic diagnostic reasoning engine:
+
+- ranked differential diagnoses
+- competing hypotheses
+- uncertainty-aware clinical synthesis
+
+---
+
+## 9. Global Prioritization Engine (Safety Layer)
+Critical triage system:
+
+- urgency scoring (0–100)
+- “do-not-miss” detection
+- hard overrides (e.g., STEMI, stroke, sepsis)
+
+Ensures patient safety overrides all downstream logic.
+
+---
+
+## 10. Clinical Orchestration Engine
+Transforms reasoning into care pathways:
+
+- guideline-based treatment plans
+- personalized deviations
+- outpatient vs inpatient routing
+- branching decision trees
+
+---
+
+## 11. Decision & Rule Engine (Hybrid)
+Combines:
+
+- clinical guidelines
+- probabilistic ranking
+- contraindication filtering
+
+Outputs:
+> ranked action set (not single deterministic decision)
+
+---
+
+## 12. Execution Layer
+Operational layer:
+
+- prescriptions
+- lab orders
+- alerts
+- scheduling
+- EMR / app integration
+
+---
+
+## 13. Feedback & Outcome Layer
+Closes the loop:
+
+- treatment response detection
+- physiological change attribution
+- delayed effect modeling
+
+---
+
+## 14. State Update & Event Regeneration
+Updates system reality:
+
+- recalculates patient state
+- generates new clinical events
+- feeds back into reasoning loop
+
+---
+
+# 🔁 Continuous Learning Loop
+
+The system operates as a continuous loop:
+
+```
+
+Observe → Interpret → Prioritize → Act → Measure Response → Update State → Repeat
+
 ```
 
 ---
 
-## 🛡️ Offline Fallback (Recommended)
+# 🧠 Key Design Principles
 
-Bundle a local copy of each module inside the app to ensure offline functionality.
+- **Uncertainty is first-class**
+- **Context modifies meaning**
+- **Contradictions are expected, not errors**
+- **Decisions are ranked, not absolute**
+- **Safety overrides all logic layers**
+- **Time is a core dimension of reasoning**
 
-**Swift:**
+---
 
-```swift
-func loadLocalJSON(_ name: String) -> Data? {
-    guard let path = Bundle.main.path(forResource: name, ofType: "json") else { return nil }
-    return try? Data(contentsOf: URL(fileURLWithPath: path))
-}
+# 🚀 Intended Use Cases
+
+- cardiovascular decision support systems
+- hypertension management engines
+- chronic disease navigation platforms
+- clinical AI copilots
+- guideline-to-code translation systems
+
+---
+
+# ⚠️ Important Note
+
+This is a conceptual architecture for building clinical intelligence systems.
+
+It is not a medical device and should not be used for autonomous clinical decision-making without validation, regulatory review, and clinical oversight.
+
+---
+
+# 🧩 Future Extensions
+
+- full JSON schema implementation per layer
+- HTN / HF / CKD plug-in modules
+- real-time API architecture
+- EMR integration layer
+- reinforcement learning from outcomes
+
+---
+
+# 🧠 Author Intent
+
+This architecture is designed to move clinical AI systems:
+
+> from static rule engines → to dynamic clinical reasoning systems
+
 ```
-
----
-
-## 🔄 Updating Modules
-
-1. Edit the JSON file in `modules/`
-2. Commit and push
-3. App automatically loads the new version via CDN  
-   (no App Store update required)
-
----
-
-## 🧪 Versioning
-
-`version.json` tracks the current module versions and can be used by the app to
-determine whether to refresh cached modules.
-
----
-
-## 📜 License
-
-Internal clinical logic modules for mobile app use.
