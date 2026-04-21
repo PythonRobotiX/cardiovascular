@@ -1,4 +1,4 @@
-## Cardiovascular App
+## Cardiovascular Navigation App
 
 A probabilistic, context-aware clinical reasoning system designed to model real-world medical decision-making over time.
 
