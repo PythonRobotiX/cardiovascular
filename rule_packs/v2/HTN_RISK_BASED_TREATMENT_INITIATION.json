@@ -1,0 +1,115 @@
+{
+  "module": "HTN_RISK_BASED_TREATMENT_INITIATION",
+  "version": "1.0",
+
+  "inputs": {
+    "average_sbp": "mmHg",
+    "average_dbp": "mmHg",
+    "clinical_cvd": "boolean",
+    "conditions": {
+      "diabetes": "boolean",
+      "ckd": "boolean"
+    },
+    "prevent_cvd_10yr_risk": "percentage"
+  },
+
+  "decision_tree": {
+    "step_1_bp_threshold_check": {
+      "condition": "average_sbp >= 140 OR average_dbp >= 90",
+      "if_true": "INITIATE_BP_TREATMENT_CONSIDERATION",
+      "if_false": "MOVE_TO_RISK_BASED_EVALUATION"
+    },
+
+    "step_2_clinical_cvd_check": {
+      "condition": "clinical_cvd == true",
+      "if_true": "SECONDARY_PREVENTION_PATHWAY",
+      "if_false": "PRIMARY_RISK_ASSESSMENT_PATHWAY"
+    },
+
+    "step_3_risk_enhancers": {
+      "condition": "diabetes == true OR ckd == true OR prevent_cvd_10yr_risk >= 7.5",
+      "if_true": "ENHANCED_RISK_PATHWAY",
+      "if_false": "STANDARD_RISK_PATHWAY"
+    }
+  },
+
+  "treatment_initiation_rules": {
+
+    "SECONDARY_PREVENTION_PATHWAY": {
+      "eligibility_condition": "clinical_cvd == true",
+      "treatment_trigger": "average_sbp >= 130 OR average_dbp >= 80",
+      "recommendation": "INITIATE_ANTIHYPERTENSIVE_THERAPY",
+      "goal": "reduce_cvd_risk",
+      "cor": "1",
+      "loe": "A"
+    },
+
+    "PRIMARY_PREVENTION_PATHWAY": {
+      "eligibility_condition": "clinical_cvd == false",
+      "treatment_trigger": "average_sbp >= 130 OR average_dbp >= 80",
+      "recommendation": "INITIATE_ANTIHYPERTENSIVE_THERAPY",
+      "goal": "prevent_cvd",
+      "cor": "1",
+      "loe": "A"
+    }
+  },
+
+  "first_line_therapy_recommendations": {
+    "recommended_agents": [
+      "thiazide_type_diuretics",
+      "long_acting_dihydropyridine_ccb",
+      "ace_inhibitor",
+      "arb"
+    ],
+    "rule": "use_single_or_combination_based_on_risk_and_tolerance",
+    "goal": "cvd_risk_reduction"
+  },
+
+  "risk_logic_map": {
+
+    "HIGH_RISK_GROUP": {
+      "definition": "diabetes OR ckd OR prevent_cvd_10yr_risk >= 7.5",
+      "effect": "lowers_threshold_for_treatment_urgency"
+    },
+
+    "NO_RISK_FACTORS": {
+      "definition": "no_clinical_cvd AND no_diabetes AND no_ckd AND prevent_cvd_10yr_risk < 7.5",
+      "effect": "standard_threshold_application"
+    }
+  },
+
+  "safety_and_classification": {
+    "COR_1": {
+      "meaning": "strong_recommendation",
+      "application": "initiate_treatment_when_threshold_met"
+    },
+    "COR_2A": {
+      "meaning": "moderate_recommendation",
+      "application": "generally_should_treat"
+    },
+    "COR_2B": {
+      "meaning": "weak_recommendation",
+      "application": "may_consider_treatment"
+    },
+    "COR_3_NON_BENEFIT": {
+      "meaning": "no_benefit",
+      "application": "do_not_initiate"
+    },
+    "COR_3_HARM": {
+      "meaning": "harmful",
+      "application": "contraindicated"
+    }
+  },
+
+  "clinical_decision_outputs": {
+    "INITIATE_TREATMENT": {
+      "action": "start_antihypertensive_medication",
+      "intent": "reduce_blood_pressure_and_cvd_risk"
+    },
+
+    "DEFER_TREATMENT": {
+      "action": "lifestyle_modification_and_monitoring",
+      "intent": "observe_and_reassess"
+    }
+  }
+}

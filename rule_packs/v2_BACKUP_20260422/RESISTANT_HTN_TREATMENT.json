@@ -1,0 +1,244 @@
+{
+  "module": "RESISTANT_HTN_TREATMENT",
+  "version": "2025.1_unified",
+  "clinical_domain": "Hypertension",
+
+  "core_definition": {
+    "resistant_hypertension": {
+      "description": "Hypertension uncontrolled despite ≥3 antihypertensive agents of different classes at optimal doses including a diuretic OR controlled BP requiring ≥4 agents.",
+      "clinical_goal": "Identify true treatment-resistant hypertension after exclusion of pseudoresistance and initiate escalation pathway or specialist referral.",
+      "requires_exclusion_of": [
+        "medication_nonadherence",
+        "white_coat_hypertension",
+        "inaccurate_BP_measurement",
+        "suboptimal_dosing",
+        "secondary_hypertension"
+      ]
+    }
+  },
+
+  "diagnostic_validity_layer": {
+    "module": "PSEUDORESISTANCE_EXCLUSION_GATE",
+    "purpose": "Ensure true resistance before labeling patient as resistant HTN",
+
+    "checks": [
+      {
+        "check_id": "BP_MEASUREMENT_VALIDATION",
+        "type": "measurement_quality",
+        "criteria": [
+          "correct_cuff_size",
+          "resting_5_minutes",
+          "no_recent_stimulants",
+          "multiple_readings_averaged"
+        ]
+      },
+
+      {
+        "check_id": "MEDICATION_ADHERENCE",
+        "type": "adherence_assessment",
+        "methods": [
+          "patient_interview",
+          "pharmacy_refill_history",
+          "pill_count"
+        ]
+      },
+
+      {
+        "check_id": "WHITE_COAT_EXCLUSION",
+        "type": "out_of_office_BP",
+        "methods": [
+          "HBPM",
+          "ABPM"
+        ],
+        "rule": "white_coat_if_office_high_and_out_of_office_normal"
+      },
+
+      {
+        "check_id": "LIFESTYLE_CONTRIBUTORS",
+        "type": "modifiable_factors",
+        "factors": [
+          "high_sodium_intake",
+          "obesity",
+          "alcohol_use",
+          "sleep_apnea_suspicion"
+        ]
+      },
+
+      {
+        "check_id": "INTERFERING_SUBSTANCES",
+        "type": "drug_induced_hypertension",
+        "agents": [
+          "NSAIDs",
+          "steroids",
+          "sympathomimetics",
+          "oral_contraceptives",
+          "calcineurin_inhibitors",
+          "illicit_drugs"
+        ]
+      },
+
+      {
+        "check_id": "SECONDARY_HTN_SCREENING",
+        "type": "etiology_workup",
+        "conditions": [
+          "primary_aldosteronism",
+          "renal_parenchymal_disease",
+          "renal_artery_stenosis",
+          "pheochromocytoma",
+          "thyroid_disorders",
+          "OSA",
+          "Cushing_syndrome"
+        ]
+      }
+    ],
+
+    "decision_logic": {
+      "true_resistant_htn": {
+        "condition": "all_pseudoresistance_excluded == true",
+        "next_step": "TRUE_RESISTANT_HTN_PATHWAY"
+      },
+      "pseudoresistance_present": {
+        "condition": "any_check_positive == true",
+        "next_step": "CORRECTABLE_FACTOR_PATHWAY"
+      }
+    }
+  },
+
+  "diagnostic_classification_layer": {
+    "resistant_htn_criteria": [
+      {
+        "id": "TR1",
+        "type": "uncontrolled_on_triple_therapy",
+        "condition": {
+          "bp": ">=130/80",
+          "medications_count": ">=3",
+          "required_classes": [
+            "ACEi_OR_ARB",
+            "CCB",
+            "thiazide_like_diuretic"
+          ]
+        }
+      },
+      {
+        "id": "TR2",
+        "type": "controlled_on_multiple_drugs",
+        "condition": {
+          "bp": "<130/80",
+          "medications_count": ">=4"
+        }
+      }
+    ]
+  },
+
+  "treatment_escalation_engine": {
+    "priority_rules": [
+      {
+        "id": "TR_001_DIURETIC_OPTIMIZATION",
+        "action": "optimize_diuretic",
+        "options": [
+          "chlorthalidone_12.5_25mg",
+          "indapamide_1.25_2.5mg"
+        ]
+      },
+
+      {
+        "id": "TR_002_ADD_MRA",
+        "condition": "eGFR >= 45",
+        "action": "add_MRA",
+        "options": [
+          "spironolactone_25_50mg",
+          "eplerenone_25_50mg_BID"
+        ]
+      },
+
+      {
+        "id": "TR_003_CKD_ADJUSTMENT",
+        "condition": "CKD_stage >= 4",
+        "action": "switch_diuretic_strategy",
+        "options": [
+          "loop_diuretics",
+          "chlorthalidone_cautious_use"
+        ]
+      },
+
+      {
+        "id": "TR_004_ADDITIONAL_CLASSES",
+        "action": "add_supportive_agents",
+        "options": [
+          "beta_blocker_if_tachycardia",
+          "central_sympatholytic",
+          "non_dihydropyridine_CCB_if_indicated"
+        ]
+      },
+
+      {
+        "id": "TR_005_ADVANCED_THERAPY",
+        "condition": "persistent_resistance_after_standard_therapy",
+        "options": [
+          "minoxidil",
+          "hydralazine",
+          "endothelin_antagonist_aprocitentan"
+        ]
+      }
+    ]
+  },
+
+  "referral_engine": {
+    "rules": [
+      {
+        "id": "REF_001_SECONDARY_HTN",
+        "trigger": "secondary_htn_suspected_or_confirmed",
+        "specialists": [
+          "Nephrology",
+          "Endocrinology",
+          "Cardiology",
+          "HTN_Specialist"
+        ],
+        "urgency": "high",
+        "state_transition": "Diagnostic_Expansion"
+      },
+
+      {
+        "id": "REF_002_PERSISTENT_UNCONTROLLED",
+        "trigger": "bp_uncontrolled_>=6_months",
+        "specialists": [
+          "HTN_Specialist",
+          "Cardiology",
+          "Nephrology"
+        ],
+        "urgency": "medium_high",
+        "state_transition": "Treatment_Optimization"
+      }
+    ]
+  },
+
+  "system_outputs": {
+    "state_updates": [
+      "resistant_htn_confirmed",
+      "pseudoresistance_suspected",
+      "secondary_htn_flag"
+    ],
+
+    "navigation_triggers": [
+      "specialist_referral",
+      "advanced_workup",
+      "therapy_escalation"
+    ],
+
+    "safety_flags": [
+      "false_resistance_risk",
+      "uncontrolled_bp_risk",
+      "secondary_htn_red_flag"
+    ]
+  },
+
+  "architecture_mapping": {
+    "ontology_layer": "definitions",
+    "domain_layer": "classification",
+    "event_logic": "BP control + time dynamics",
+    "safety_engine": "pseudoresistance + escalation gating",
+    "care_lifecycle": "resistant HTN state transitions",
+    "orchestration": "treatment escalation",
+    "navigation": "specialist routing"
+  }
+}

@@ -1,0 +1,165 @@
+{
+  "module": "HTN_PREGNANCY_CLASSIFICATION",
+  "version": "1.1",
+
+  "physiologic_thresholds": {
+    "blood_pressure_definition": {
+      "hypertension_in_pregnancy": {
+        "systolic_bp": ">= 140",
+        "diastolic_bp": ">= 90",
+        "logic": "SBP >= 140 OR DBP >= 90"
+      },
+      "severe_range_hypertension": {
+        "systolic_bp": ">= 160",
+        "diastolic_bp": ">= 110",
+        "logic": "SBP >= 160 OR DBP >= 110"
+      }
+    },
+
+    "severity_mapping": {
+      "normal": "SBP < 140 AND DBP < 90",
+      "mild_hypertension": "SBP 140-159 OR DBP 90-109",
+      "severe_hypertension": "SBP >= 160 OR DBP >= 110"
+    }
+  },
+
+  "clinical_features": {
+    "end_organ_dysfunction": [
+      "neurologic_symptoms",
+      "pulmonary_edema",
+      "hematologic_abnormalities",
+      "acute_kidney_injury",
+      "hepatic_dysfunction"
+    ]
+  },
+
+  "disease_entities": {
+    "CHRONIC_HYPERTENSION": {
+      "definition": "Hypertension diagnosed prior to pregnancy or before 20 weeks gestation",
+      "diagnostic_rules": [
+        {
+          "rule_id": "CHRONIC_HTN_1",
+          "condition": "hypertension_present == true AND gestational_age_weeks < 20",
+          "output": "CHRONIC_HYPERTENSION"
+        },
+        {
+          "rule_id": "CHRONIC_HTN_2",
+          "condition": "hypertension_diagnosed_before_pregnancy == true",
+          "output": "CHRONIC_HYPERTENSION"
+        }
+      ]
+    },
+
+    "GESTATIONAL_HYPERTENSION": {
+      "definition": "New-onset hypertension at or after 20 weeks gestation without proteinuria or end-organ dysfunction",
+      "diagnostic_rules": [
+        {
+          "rule_id": "GEST_HTN_1",
+          "condition": "hypertension_present == true AND gestational_age_weeks >= 20 AND proteinuria == false AND end_organ_dysfunction == false",
+          "output": "GESTATIONAL_HYPERTENSION"
+        }
+      ]
+    },
+
+    "PREECLAMPSIA": {
+      "definition": "Gestational hypertension with proteinuria or maternal end-organ dysfunction",
+      "diagnostic_rules": [
+        {
+          "rule_id": "PREECLAMPSIA_1",
+          "condition": "gestational_age_weeks >= 20 AND hypertension_present == true AND (proteinuria == true OR end_organ_dysfunction == true)",
+          "output": "PREECLAMPSIA"
+        }
+      ]
+    },
+
+    "PREECLAMPSIA_SUPERIMPOSED": {
+      "definition": "Preeclampsia occurring in a patient with pre-existing chronic hypertension",
+      "diagnostic_rules": [
+        {
+          "rule_id": "SUPERIMPOSED_1",
+          "condition": "chronic_hypertension_history == true AND (proteinuria == true OR end_organ_dysfunction == true)",
+          "output": "PREECLAMPSIA_SUPERIMPOSED"
+        }
+      ]
+    }
+  },
+
+  "state_machine": {
+    "states": [
+      "NORMAL",
+      "CHRONIC_HYPERTENSION",
+      "GESTATIONAL_HYPERTENSION",
+      "PREECLAMPSIA",
+      "PREECLAMPSIA_SUPERIMPOSED"
+    ],
+
+    "transitions": [
+      {
+        "from": "NORMAL",
+        "to": "CHRONIC_HYPERTENSION",
+        "trigger": "(SBP >= 140 OR DBP >= 90) AND gestational_age_weeks < 20"
+      },
+      {
+        "from": "NORMAL",
+        "to": "GESTATIONAL_HYPERTENSION",
+        "trigger": "(SBP >= 140 OR DBP >= 90) AND gestational_age_weeks >= 20 AND proteinuria == false AND end_organ_dysfunction == false"
+      },
+      {
+        "from": "GESTATIONAL_HYPERTENSION",
+        "to": "PREECLAMPSIA",
+        "trigger": "proteinuria == true OR end_organ_dysfunction == true"
+      },
+      {
+        "from": "CHRONIC_HYPERTENSION",
+        "to": "PREECLAMPSIA_SUPERIMPOSED",
+        "trigger": "proteinuria == true OR end_organ_dysfunction == true"
+      }
+    ]
+  },
+
+  "safety_engine_rules": [
+    {
+      "rule_id": "SAFETY_1",
+      "condition": "SBP >= 160 OR DBP >= 110",
+      "priority": "CRITICAL",
+      "action": "IMMEDIATE_ESCALATION"
+    },
+    {
+      "rule_id": "SAFETY_2",
+      "condition": "pulmonary_edema == true",
+      "priority": "CRITICAL",
+      "action": "IMMEDIATE_ESCALATION"
+    },
+    {
+      "rule_id": "SAFETY_3",
+      "condition": "neurologic_symptoms == true",
+      "priority": "HIGH",
+      "action": "URGENT_EVALUATION"
+    },
+    {
+      "rule_id": "SAFETY_4",
+      "condition": "acute_kidney_injury == true OR hepatic_dysfunction == true",
+      "priority": "HIGH",
+      "action": "INPATIENT_CONSIDERATION"
+    }
+  ],
+
+  "navigation_rules": {
+    "CHRONIC_HYPERTENSION": {
+      "care_setting": "outpatient",
+      "provider_type": "primary_care_or_OB"
+    },
+    "GESTATIONAL_HYPERTENSION": {
+      "care_setting": "high_risk_outpatient",
+      "provider_type": "maternal_fetal_medicine"
+    },
+    "PREECLAMPSIA": {
+      "care_setting": "hospital_evaluation",
+      "provider_type": "maternal_fetal_medicine"
+    },
+    "PREECLAMPSIA_SUPERIMPOSED": {
+      "care_setting": "inpatient",
+      "provider_type": "tertiary_care_center"
+    }
+  }
+}

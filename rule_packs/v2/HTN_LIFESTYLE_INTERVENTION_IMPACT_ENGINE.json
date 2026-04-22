@@ -1,0 +1,150 @@
+{
+  "module": "HTN_LIFESTYLE_INTERVENTION_IMPACT_ENGINE",
+  "version": "1.0",
+
+  "purpose": "Estimate approximate systolic blood pressure (SBP) reduction from non-pharmacologic interventions based on hypertensive status",
+
+  "input_variables": {
+    "has_hypertension": "boolean",
+    "baseline_sbp": "number (optional)",
+    "interventions_applied": "array of intervention_ids"
+  },
+
+  "interventions": {
+    "WEIGHT_LOSS": {
+      "type": "lifestyle",
+      "sbp_effect_mmHg": {
+        "with_hypertension": {
+          "min": -6,
+          "max": -8
+        },
+        "without_hypertension": {
+          "min": -3,
+          "max": -5
+        }
+      }
+    },
+
+    "DASH_DIET": {
+      "type": "dietary",
+      "sbp_effect_mmHg": {
+        "with_hypertension": {
+          "min": -5,
+          "max": -8
+        },
+        "without_hypertension": {
+          "min": -3,
+          "max": -7
+        }
+      }
+    },
+
+    "SODIUM_REDUCTION": {
+      "type": "dietary",
+      "sbp_effect_mmHg": {
+        "with_hypertension": {
+          "min": -6,
+          "max": -8
+        },
+        "without_hypertension": {
+          "min": -1,
+          "max": -4
+        }
+      }
+    },
+
+    "SALT_SUBSTITUTE": {
+      "type": "dietary",
+      "sbp_effect_mmHg": {
+        "with_hypertension": {
+          "min": -5,
+          "max": -7
+        },
+        "without_hypertension": {
+          "min": -5,
+          "max": -5
+        }
+      }
+    },
+
+    "AEROBIC_EXERCISE": {
+      "type": "physical_activity",
+      "sbp_effect_mmHg": {
+        "with_hypertension": {
+          "min": -4,
+          "max": -8
+        },
+        "without_hypertension": {
+          "min": -2,
+          "max": -7
+        }
+      }
+    },
+
+    "ISOMETRIC_RESISTANCE_TRAINING": {
+      "type": "physical_activity",
+      "sbp_effect_mmHg": {
+        "with_hypertension": {
+          "min": -5,
+          "max": -10
+        },
+        "without_hypertension": {
+          "min": -4,
+          "max": -6
+        }
+      }
+    },
+
+    "MEDITATION_BREATHING": {
+      "type": "behavioral",
+      "sbp_effect_mmHg": {
+        "approximate": -5
+      }
+    }
+  },
+
+  "aggregation_rules": {
+    "rule_type": "nonlinear_capped_additive_model",
+
+    "combination_logic": "sum_individual_effects_with_diminishing_returns",
+
+    "max_total_lifestyle_effect_mmHg": {
+      "soft_cap": -20,
+      "hard_cap": -25
+    },
+
+    "overlap_penalty": {
+      "same_category_reduction_factor": 0.85
+    }
+  },
+
+  "context_modifiers": {
+    "baseline_bp_dependency": true,
+
+    "higher_baseline_sbp_increases_response": true,
+
+    "low_baseline_bp_reduces_effect_size": true,
+
+    "adherence_scaling_factor": {
+      "poor": 0.4,
+      "moderate": 0.7,
+      "high": 1.0
+    }
+  },
+
+  "clinical_usage_layer": {
+    "domain_layer": "lifestyle_risk_modification",
+    "orchestration_layer": "first_line_intervention_planning",
+    "decision_engine": "non_pharmacologic_therapy_estimation",
+    "safety_engine": "non_risky_by_default"
+  },
+
+  "output_format": {
+    "estimated_sbp_reduction_range_mmHg": {
+      "min": "number",
+      "max": "number"
+    },
+    "expected_effect_category": "low | moderate | high",
+    "recommended_as_adjunct_to_medication": "boolean"
+  }
+}

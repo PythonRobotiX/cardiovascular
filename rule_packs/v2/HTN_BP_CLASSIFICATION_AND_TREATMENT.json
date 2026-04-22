@@ -1,0 +1,126 @@
+{
+  "module": "HTN_BP_CLASSIFICATION_AND_TREATMENT",
+  "version": "2025.1",
+
+  "bp_categories": {
+    "normal": {
+      "systolic_range": "<120",
+      "diastolic_range": "<80",
+      "label": "Normal BP"
+    },
+
+    "elevated": {
+      "systolic_range": "120-129",
+      "diastolic_range": "<80",
+      "label": "Elevated BP"
+    },
+
+    "stage_1_htn": {
+      "systolic_range": "130-139",
+      "diastolic_range": "80-89",
+      "label": "Stage 1 Hypertension"
+    },
+
+    "stage_2_htn": {
+      "systolic_range": ">=140",
+      "diastolic_range": ">=90",
+      "label": "Stage 2 Hypertension"
+    }
+  },
+
+  "universal_rules": {
+    "lifestyle_therapy": {
+      "applicable_to_all_stages": true,
+      "recommendation": "Lifestyle modification recommended at all BP levels",
+      "class_of_recommendation": "COR 1"
+    }
+  },
+
+  "treatment_logic": {
+
+    "normal_bp": {
+      "action": "no_pharmacologic_treatment",
+      "follow_up": {
+        "interval": "1 year",
+        "type": "routine_reassessment"
+      }
+    },
+
+    "elevated_bp": {
+      "action": "lifestyle_only",
+      "follow_up": {
+        "interval": "3-6 months",
+        "class_of_recommendation": "COR 1"
+      }
+    },
+
+    "stage_1_htn": {
+      "decision_node": "cardiometabolic_risk_assessment",
+
+      "low_risk": {
+        "criteria": {
+          "diabetes": false,
+          "ckd": false,
+          "ascvd_10yr_risk_ge_7_5_percent": false
+        },
+        "action": "lifestyle_only",
+        "follow_up": "3-6 months"
+      },
+
+      "high_risk": {
+        "criteria": {
+          "diabetes": true,
+          "ckd": true,
+          "ascvd_10yr_risk_ge_7_5_percent": true
+        },
+        "action": "initiate_antihypertensive_medication",
+        "follow_up": "1 month",
+        "class_of_recommendation": "COR 1"
+      }
+    },
+
+    "stage_2_htn": {
+      "action": "initiate_antihypertensive_medication",
+      "follow_up": {
+        "interval": "1 month",
+        "class_of_recommendation": "COR 1"
+      }
+    }
+  },
+
+  "post_treatment_logic": {
+
+    "bp_goal_met": {
+      "action": "maintain_therapy",
+      "follow_up": {
+        "interval": "3-6 months",
+        "class_of_recommendation": "COR 1"
+      }
+    },
+
+    "bp_goal_not_met": {
+      "action": "consider_therapy_intensification",
+      "notes": [
+        "assess adherence",
+        "optimize lifestyle therapy",
+        "consider medication escalation"
+      ]
+    }
+  },
+
+  "decision_dependencies": {
+    "required_inputs": [
+      "blood_pressure_readings",
+      "diabetes_status",
+      "ckd_status",
+      "ascvd_10_year_risk"
+    ]
+  },
+
+  "outputs": {
+    "classification": "bp_category",
+    "recommended_action": "treatment_or_lifestyle",
+    "follow_up_interval": "time_based_recommendation",
+    "risk_flag": "escalation_indicator"
+  }
+}

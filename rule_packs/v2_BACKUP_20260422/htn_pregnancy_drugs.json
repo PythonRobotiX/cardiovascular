@@ -1,0 +1,158 @@
+{
+  "module": "HTN_PREGNANCY_ANTIHYPERTENSIVE_THERAPY",
+  "version": "1.0",
+
+  "drug_classes": {
+
+    "LABETALOL": {
+      "mechanism_class": "beta_blocker_alpha_blocker",
+      "role": "first_line",
+
+      "dosing": {
+        "oral_total_daily_dose_mg": "200–2400",
+        "initial_dose_mg": "100–200",
+        "frequency": "BID to TID"
+      },
+
+      "clinical_notes": [
+        "Potential bronchoconstriction",
+        "Avoid in asthma",
+        "Avoid in myocardial disease",
+        "Avoid in decompensated heart failure",
+        "Avoid in heart block or bradycardia"
+      ],
+
+      "contraindications": [
+        "asthma",
+        "bronchospastic_disease",
+        "heart_block",
+        "bradycardia",
+        "decompensated_cardiac_function"
+      ],
+
+      "use_case": [
+        "chronic_hypertension_in_pregnancy",
+        "severe_hypertension_control_in_outpatient_or_inpatient"
+      ]
+    },
+
+    "NIFEDIPINE": {
+      "mechanism_class": "calcium_channel_blocker_dihydropyridine",
+      "role": "first_line",
+
+      "dosing": {
+        "extended_release_total_daily_mg": "30–120",
+        "initial_dose_mg": "30–60",
+        "frequency": "once_daily_ER"
+      },
+
+      "clinical_notes": [
+        "Do NOT use sublingual form",
+        "Immediate release reserved for acute severe inpatient hypertension",
+        "Avoid in tachycardia"
+      ],
+
+      "contraindications": [
+        "tachyarrhythmia_caution"
+      ],
+
+      "use_case": [
+        "chronic_hypertension_in_pregnancy",
+        "acute_severe_inpatient_bp_control"
+      ]
+    },
+
+    "METHYLDOPA": {
+      "mechanism_class": "central_alpha2_agonist",
+      "role": "second_line_or_alternative",
+
+      "dosing": {
+        "total_daily_dose_mg": "500–3000",
+        "initial_dose_mg": "250",
+        "frequency": "BID to TID or QID"
+      },
+
+      "clinical_notes": [
+        "Long-term safety data up to 7 years in offspring",
+        "Less effective for severe hypertension",
+        "High side effect burden: sedation, depression, dizziness"
+      ],
+
+      "limitations": [
+        "lower_efficacy_in_severe_htn",
+        "poor_tolerability"
+      ],
+
+      "use_case": [
+        "alternative_first_line_if_others_not_tolerated",
+        "historical_or_resource_limited_settings"
+      ]
+    },
+
+    "HYDROCHLOROTHIAZIDE": {
+      "mechanism_class": "thiazide_diuretic",
+      "role": "second_or_third_line",
+
+      "dosing": {
+        "daily_dose_mg": "12.5–50",
+        "frequency": "once_daily"
+      },
+
+      "clinical_notes": [
+        "Second or third-line agent in pregnancy"
+      ],
+
+      "use_case": [
+        "adjunct_therapy",
+        "resistant_hypertension_support"
+      ]
+    }
+  },
+
+  "therapy_selection_engine": {
+
+    "first_line_agents": [
+      "LABETALOL",
+      "NIFEDIPINE"
+    ],
+
+    "second_line_agents": [
+      "METHYLDOPA",
+      "HYDROCHLOROTHIAZIDE"
+    ],
+
+    "selection_rules": [
+      {
+        "rule_id": "THERAPY_1",
+        "condition": "asthma == true",
+        "avoid": "LABETALOL"
+      },
+      {
+        "rule_id": "THERAPY_2",
+        "condition": "tachycardia == true",
+        "avoid": "NIFEDIPINE"
+      },
+      {
+        "rule_id": "THERAPY_3",
+        "condition": "severe_hypertension == true",
+        "preferred": ["LABETALOL", "NIFEDIPINE"]
+      },
+      {
+        "rule_id": "THERAPY_4",
+        "condition": "intolerance_to_first_line == true",
+        "fallback": "METHYLDOPA"
+      }
+    ]
+  },
+
+  "acute_inpatient_protocols": {
+
+    "severe_hypertension_management": {
+      "preferred_agents": [
+        "IV_labetalol_oral_equivalent",
+        "oral_or_IV_nifedipine_ER"
+      ],
+      "note": "Immediate release nifedipine only in controlled inpatient setting"
+    }
+  }
+}

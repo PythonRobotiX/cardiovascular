@@ -1,0 +1,175 @@
+{
+  "module": "GDMT_HFrEF_HTN",
+  "version": "1.0",
+
+  "disease_context": {
+    "primary_condition": "HEART_FAILURE_HFrEF",
+    "requires_symptoms": "optional_for_some_classes",
+    "key_constraints": [
+      "renal_function",
+      "potassium_level",
+      "NYHA_class",
+      "hemodynamic_stability"
+    ]
+  },
+
+  "patient_state_inputs": {
+    "eGFR": "numeric",
+    "potassium_mEq_L": "numeric",
+    "NYHA_class": "I_to_IV",
+    "symptomatic_HFrEF": "boolean",
+    "diabetes_type_2": "boolean",
+    "race_self_identified": "string",
+    "drug_intolerance": "boolean"
+  },
+
+  "drug_classes": {
+
+    "BB": {
+      "name": "Beta Blockers (mortality-reducing subset)",
+      "eligible_drugs": [
+        "bisoprolol",
+        "carvedilol",
+        "metoprolol_succinate"
+      ],
+      "rule": {
+        "condition": "diagnosis == HFrEF",
+        "requirement": "use_one_of(eligible_drugs)",
+        "notes": "even_if_asymptomatic",
+        "goal": ["reduce_mortality", "reduce_hospitalizations"]
+      }
+    },
+
+    "MRA": {
+      "name": "Mineralocorticoid Receptor Antagonists",
+      "eligible_drugs": [
+        "spironolactone",
+        "eplerenone"
+      ],
+      "rule": {
+        "condition": "symptomatic_HFrEF == true",
+        "constraints": {
+          "eGFR": "> 30",
+          "potassium_mEq_L": "< 5.0"
+        },
+        "action": "initiate_if_constraints_met",
+        "goal": ["reduce_morbidity", "reduce_mortality"]
+      }
+    },
+
+    "RAASi": {
+      "name": "RAAS Inhibition Pathway",
+      "branches": {
+        "ARNI": {
+          "preferred": true,
+          "drug": "sacubitril_valsartan",
+          "condition": "NYHA_class in [II, III]",
+          "goal": ["reduce_mortality", "reduce_morbidity"]
+        },
+        "ACEi": {
+          "fallback": true,
+          "condition": "ARNI_not_feasible == true",
+          "goal": ["reduce_mortality", "reduce_morbidity"]
+        },
+        "ARB": {
+          "fallback": true,
+          "condition": "ACEi_intolerance == true AND ARNI_not_feasible == true",
+          "goal": ["reduce_mortality", "reduce_morbidity"]
+        }
+      }
+    },
+
+    "SGLT2i": {
+      "name": "SGLT2 Inhibitors",
+      "eligible_drugs": [
+        "dapagliflozin",
+        "empagliflozin"
+      ],
+      "rule": {
+        "condition": "symptomatic_HFrEF == true",
+        "independent_of": "diabetes_type_2",
+        "goal": ["reduce_hospitalization", "reduce_CV_mortality"]
+      }
+    },
+
+    "HYDRALAZINE_ISDN": {
+      "name": "Hydralazine + Isosorbide Dinitrate",
+      "rule_sets": [
+        {
+          "id": "AFRICAN_AMERICAN_NYHA_III_IV",
+          "condition": "race_self_identified == 'Black' AND NYHA_class in [III, IV] AND on_optimal_medical_therapy == true",
+          "goal": ["improve_symptoms", "reduce_morbidity", "reduce_mortality"]
+        },
+        {
+          "id": "INTOLERANCE_OR_RENAL_LIMIT",
+          "condition": "RAASi_intolerance == true OR eGFR < threshold_for_RAASi",
+          "goal": ["reduce_morbidity", "reduce_mortality"]
+        }
+      ]
+    }
+  },
+
+  "global_treatment_logic": {
+
+    "GDMT_STRATEGY": {
+      "principle": "multi_drug_parallel_foundational_therapy",
+      "rule": "do_not_wait_for_failure_before_adding_classes",
+      "layers": [
+        "BB",
+        "RAASi",
+        "MRA",
+        "SGLT2i"
+      ]
+    },
+
+    "optimization_logic": {
+      "rule": "titrate_all_tolerated_classes_to_target_dose",
+      "monitoring": [
+        "renal_function",
+        "potassium",
+        "blood_pressure",
+        "symptoms"
+      ]
+    }
+  },
+
+  "safety_engine_rules": [
+    {
+      "rule_id": "HF_SAFETY_1",
+      "condition": "potassium_mEq_L >= 5.5",
+      "action": "hold_MRA",
+      "priority": "HIGH"
+    },
+    {
+      "rule_id": "HF_SAFETY_2",
+      "condition": "eGFR <= 30",
+      "action": "avoid_or_reduce_MRA",
+      "priority": "HIGH"
+    },
+    {
+      "rule_id": "HF_SAFETY_3",
+      "condition": "hypotension_symptomatic == true",
+      "action": "reassess_all_GDMT_doses",
+      "priority": "HIGH"
+    }
+  ],
+
+  "care_lifecycle_mapping": {
+    "INITIATION": [
+      "BB",
+      "RAASi",
+      "SGLT2i"
+    ],
+    "UPTITRATION": [
+      "BB",
+      "RAASi",
+      "MRA"
+    ],
+    "OPTIMIZATION": [
+      "all_classes_target_dose"
+    ],
+    "REFRACTORY_OR_INTOLERANT": [
+      "HYDRALAZINE_ISDN"
+    ]
+  }
+}

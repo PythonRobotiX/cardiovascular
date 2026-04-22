@@ -1,0 +1,194 @@
+{
+  "module": "HTN_EMERGENCY_NONPREGNANT_NONSTROKE",
+  "version": "2025",
+  "scope": "adult_nonpregnant_nonstroke",
+
+  "definitions": {
+    "hypertensive_emergency": {
+      "bp_threshold": {
+        "systolic": ">180",
+        "diastolic": ">120"
+      },
+      "requires": ["acute_target_organ_damage"]
+    },
+    "severe_hypertension": {
+      "bp_threshold": {
+        "systolic": ">180",
+        "diastolic": ">120"
+      },
+      "requires_absence_of": ["acute_target_organ_damage"]
+    },
+    "compelling_condition": [
+      "acute_aortic_syndrome",
+      "acute_aortic_dissection"
+    ]
+  },
+
+  "state_classification": {
+    "rules": [
+      {
+        "id": "STATE_HTN_EMERGENCY",
+        "if": {
+          "bp": { "systolic": ">180", "diastolic": ">120" },
+          "target_organ_damage": true
+        },
+        "assign_state": "HYPERTENSIVE_EMERGENCY"
+      },
+      {
+        "id": "STATE_SEVERE_HTN_NO_TOD",
+        "if": {
+          "bp": { "systolic": ">180", "diastolic": ">120" },
+          "target_organ_damage": false
+        },
+        "assign_state": "SEVERE_HYPERTENSION_NO_TOD"
+      }
+    ]
+  },
+
+  "safety_engine": {
+    "high_priority_triggers": [
+      {
+        "condition": "HYPERTENSIVE_EMERGENCY",
+        "priority": "CRITICAL",
+        "action": "IMMEDIATE_ESCALATION"
+      },
+      {
+        "condition": "acute_target_organ_damage",
+        "priority": "CRITICAL"
+      }
+    ]
+  },
+
+  "decision_rules": [
+    {
+      "id": "ICU_ADMISSION",
+      "applies_to": "HYPERTENSIVE_EMERGENCY",
+      "recommendation": {
+        "action": "ADMIT_ICU",
+        "monitoring": [
+          "continuous_bp_monitoring",
+          "target_organ_damage_monitoring"
+        ],
+        "therapy": "consider_parenteral_antihypertensives"
+      },
+      "guideline": {
+        "COR": "1",
+        "LOE": "B-NR"
+      }
+    },
+
+    {
+      "id": "COMPELLING_CONDITION_BP_TARGET",
+      "applies_to": "HYPERTENSIVE_EMERGENCY",
+      "conditions": {
+        "has_compelling_condition": true
+      },
+      "targets": {
+        "general": {
+          "sbp": "<140",
+          "timeframe": "within_1_hour"
+        },
+        "aortic_dissection": {
+          "sbp": "<120",
+          "timeframe": "within_1_hour"
+        }
+      },
+      "notes": "monitor for target organ dysfunction",
+      "guideline": {
+        "COR": "1",
+        "LOE": "C-LD"
+      }
+    },
+
+    {
+      "id": "NON_COMPELLING_GRADUAL_REDUCTION",
+      "applies_to": "HYPERTENSIVE_EMERGENCY",
+      "conditions": {
+        "has_compelling_condition": false
+      },
+      "targets": [
+        {
+          "phase": "initial",
+          "reduction": "max_25_percent",
+          "timeframe": "first_hour"
+        },
+        {
+          "phase": "early",
+          "bp_target": "<160/100",
+          "timeframe": "2_to_6_hours"
+        },
+        {
+          "phase": "late",
+          "bp_target": "130_to_140",
+          "timeframe": "24_to_48_hours"
+        }
+      ],
+      "therapy": ["oral_or_parenteral"],
+      "guideline": {
+        "COR": "1",
+        "LOE": "C-LD"
+      }
+    },
+
+    {
+      "id": "AVOID_ACUTE_TREATMENT_NO_TOD",
+      "applies_to": "SEVERE_HYPERTENSION_NO_TOD",
+      "recommendation": {
+        "action": "DO_NOT_ACUTELY_LOWER_BP",
+        "avoid": [
+          "intermittent_iv_antihypertensives",
+          "rapid_oral_reduction"
+        ]
+      },
+      "guideline": {
+        "COR": "3_HARM",
+        "LOE": "B-NR"
+      }
+    }
+  ],
+
+  "orchestration": {
+    "care_paths": [
+      {
+        "state": "HYPERTENSIVE_EMERGENCY",
+        "steps": [
+          "activate_emergency_protocol",
+          "admit_to_ICU",
+          "initiate_parenteral_therapy",
+          "continuous_monitoring"
+        ]
+      },
+      {
+        "state": "SEVERE_HYPERTENSION_NO_TOD",
+        "steps": [
+          "evaluate_for_target_organ_damage",
+          "avoid_rapid_bp_lowering",
+          "optimize_outpatient_management"
+        ]
+      }
+    ]
+  },
+
+  "navigation": {
+    "routing": [
+      {
+        "state": "HYPERTENSIVE_EMERGENCY",
+        "destination": "ICU",
+        "urgency": "IMMEDIATE"
+      },
+      {
+        "state": "SEVERE_HYPERTENSION_NO_TOD",
+        "destination": "INPATIENT_OR_OUTPATIENT_MANAGEMENT",
+        "urgency": "NON_EMERGENT"
+      }
+    ]
+  },
+
+  "execution": {
+    "orders": [
+      "initiate_bp_monitoring",
+      "order_labs_for_target_organ_damage",
+      "start_antihypertensive_protocol_if_indicated"
+    ]
+  }
+}

@@ -1,0 +1,244 @@
+{
+  "module": "HTN_PLAN_OF_CARE_AND_TEAM_MODEL",
+  "version": "2025.1",
+  "applies_to": {
+    "population": "adults",
+    "condition": [
+      "uncontrolled_hypertension",
+      "undiagnosed_hypertension"
+    ]
+  },
+
+  "core_principle": {
+    "care_model": "team_based_integrated_hypertension_management",
+    "foundation": [
+      "evidence_based_guidelines",
+      "shared_decision_making",
+      "structured_follow_up",
+      "patient_self_management_support"
+    ]
+  },
+
+  "rules": [
+
+    {
+      "id": "TEAM_BASED_CARE_CORE",
+      "type": "care_model_activation",
+      "priority": "high",
+      "evidence": { "COR": "1", "LOE": "A" },
+      "condition": {
+        "state": "uncontrolled_hypertension"
+      },
+      "action": {
+        "activate_model": "team_based_care",
+        "team_required": [
+          "physician",
+          "nurse",
+          "pharmacist_optional",
+          "dietician_optional",
+          "social_worker_optional"
+        ]
+      },
+      "outputs": [
+        "care_coordination_enabled",
+        "shared_decision_workflow_active"
+      ]
+    },
+
+    {
+      "id": "INTEGRATED_TREATMENT_MODEL",
+      "type": "orchestration_bundle",
+      "priority": "high",
+      "evidence": { "COR": "1", "LOE": "B-NR" },
+      "condition": {
+        "state": "uncontrolled_hypertension"
+      },
+      "action": {
+        "activate_bundle": [
+          "accurate_bp_measurement",
+          "prompt_treatment_initiation",
+          "medication_titration_pathway",
+          "patient_engagement_loop",
+          "hbpm_monitoring",
+          "continuous_review"
+        ]
+      }
+    },
+
+    {
+      "id": "FOLLOW_UP_MONTHLY_UNTIL_CONTROL",
+      "type": "care_timeline",
+      "priority": "critical",
+      "evidence": { "COR": "1", "LOE": "B-R" },
+      "condition": {
+        "state": "uncontrolled_hypertension",
+        "therapy_status": [
+          "new_medication",
+          "dose_adjustment",
+          "therapy_intensification"
+        ]
+      },
+      "action": {
+        "schedule_follow_up": {
+          "interval": "1_month",
+          "until_condition_met": "bp_controlled"
+        },
+        "monitor": [
+          "bp_response",
+          "adherence",
+          "side_effects"
+        ]
+      }
+    },
+
+    {
+      "id": "HIT_MULTIMODAL_COMMUNICATION",
+      "type": "care_delivery_support",
+      "priority": "high",
+      "evidence": { "COR": "1", "LOE": "B-R" },
+      "condition": {
+        "state": "uncontrolled_hypertension"
+      },
+      "action": {
+        "enable_channels": [
+          "phone",
+          "video",
+          "text",
+          "email"
+        ],
+        "use_cases": [
+          "bp_monitoring",
+          "medication_titration_support",
+          "adherence_support",
+          "patient_education"
+        ]
+      }
+    },
+
+    {
+      "id": "EHR_REGISTRY_SCREENING",
+      "type": "population_health",
+      "priority": "high",
+      "evidence": { "COR": "1", "LOE": "B-NR" },
+      "condition": {
+        "state": [
+          "undiagnosed_hypertension",
+          "uncontrolled_hypertension"
+        ]
+      },
+      "action": {
+        "activate": [
+          "ehr_flagging",
+          "patient_registry_tracking"
+        ],
+        "goal": "identify_and_recall_high_risk_patients"
+      }
+    },
+
+    {
+      "id": "TELEHEALTH_INTERVENTION",
+      "type": "care_delivery_mode",
+      "priority": "moderate",
+      "evidence": { "COR": "2a", "LOE": "B-R" },
+      "condition": {
+        "state": "uncontrolled_hypertension"
+      },
+      "action": {
+        "enable_mode": "telehealth",
+        "expected_outcomes": [
+          "bp_reduction",
+          "improved_control"
+        ]
+      }
+    }
+
+  ],
+
+  "hypertension_team_model": {
+
+    "core_principle": "distributed_clinical_responsibility_with_structured_coordination",
+
+    "team_responsibilities": [
+      "communication_and_shared_decision_making",
+      "evidence_based_diagnosis_and_management",
+      "structured_follow_up_and_reminders",
+      "medication_adherence_support",
+      "medication_initiation_and_titration",
+      "lifestyle_and_behavior_change_support"
+    ],
+
+    "roles": [
+
+      {
+        "role": "primary_care_physician_or_cardiologist_or_np_pa",
+        "responsibility": [
+          "routine_and_complex_htn_management",
+          "care_coordination_lead"
+        ]
+      },
+
+      {
+        "role": "cardiologist",
+        "responsibility": [
+          "high_cardiovascular_risk_management",
+          "cardiac_comorbidity_guidance"
+        ]
+      },
+
+      {
+        "role": "nephrologist_endocrinologist_htn_specialist",
+        "responsibility": [
+          "secondary_hypertension_evaluation",
+          "resistant_hypertension_management"
+        ]
+      },
+
+      {
+        "role": "nurse",
+        "responsibility": [
+          "bp_measurement_accuracy",
+          "medication_reconciliation",
+          "patient_education",
+          "adherence_support",
+          "lifestyle_coaching"
+        ]
+      },
+
+      {
+        "role": "clinical_pharmacist",
+        "responsibility": [
+          "medication_management",
+          "drug_interaction_review",
+          "patient_medication_education"
+        ]
+      },
+
+      {
+        "role": "dietician",
+        "responsibility": [
+          "dietary_counseling",
+          "lifestyle_goal_setting",
+          "behavioral_support"
+        ]
+      },
+
+      {
+        "role": "social_worker",
+        "responsibility": [
+          "sdoh_assessment",
+          "financial_and_psychosocial_barrier_resolution"
+        ]
+      },
+
+      {
+        "role": "community_health_worker",
+        "responsibility": [
+          "sdoh_navigation",
+          "community_resource_linking",
+          "patient_support_extension"
+        ]
+      }
+
+    ]
+  }
+}

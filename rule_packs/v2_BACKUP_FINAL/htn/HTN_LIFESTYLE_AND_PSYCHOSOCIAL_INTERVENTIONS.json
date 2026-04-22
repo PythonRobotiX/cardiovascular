@@ -1,0 +1,200 @@
+{
+  "module": "HTN_LIFESTYLE_AND_PSYCHOSOCIAL_INTERVENTIONS",
+  "version": "1.0",
+
+  "intervention_categories": {
+
+    "WEIGHT_MANAGEMENT": {
+      "recommendations": [
+        {
+          "rule_id": "WEIGHT_1",
+          "condition": "patient_overweight_or_obese == true",
+          "intervention": "weight_loss",
+          "target": {
+            "goal_type": "percentage_body_weight",
+            "target_value": 0.05
+          },
+          "clinical_purpose": [
+            "prevent_elevated_bp",
+            "treat_elevated_bp",
+            "treat_hypertension"
+          ],
+          "evidence": {
+            "cor": 1,
+            "loe": "A"
+          }
+        }
+      ]
+    },
+
+    "DIET_AND_NUTRIENTS": {
+      "recommendations": [
+        {
+          "rule_id": "DIET_1",
+          "condition": "true",
+          "intervention": "dash_eating_pattern",
+          "clinical_purpose": [
+            "prevent_elevated_bp",
+            "treat_elevated_bp",
+            "treat_hypertension"
+          ],
+          "evidence": {
+            "cor": 1,
+            "loe": "A"
+          }
+        },
+
+        {
+          "rule_id": "DIET_2",
+          "condition": "true",
+          "intervention": "sodium_reduction",
+          "target": {
+            "initial_limit_mg_per_day": 2300,
+            "ideal_limit_mg_per_day": 1500
+          },
+          "clinical_purpose": [
+            "prevent_elevated_bp",
+            "treat_elevated_bp",
+            "treat_hypertension"
+          ],
+          "evidence": {
+            "cor": 1,
+            "loe": "A"
+          }
+        },
+
+        {
+          "rule_id": "DIET_3",
+          "condition": "patient_no_ckd == true AND no_k_sparing_drugs == true",
+          "intervention": "potassium_based_salt_substitute",
+          "clinical_purpose": [
+            "prevent_elevated_bp",
+            "treat_elevated_bp",
+            "treat_hypertension"
+          ],
+          "monitoring_required": {
+            "serum_potassium_monitoring": true
+          },
+          "evidence": {
+            "cor": 2.5,
+            "loe": "A"
+          }
+        },
+
+        {
+          "rule_id": "DIET_4",
+          "condition": "patient_hypertension_or_elevated_bp == true AND patient_no_ckd == true AND no_k_sparing_drugs == true",
+          "intervention": "dietary_potassium_increase",
+          "source_preference": "dietary",
+          "clinical_purpose": [
+            "prevent_elevated_bp",
+            "treat_elevated_bp",
+            "treat_hypertension"
+          ],
+          "monitoring_required": {
+            "serum_potassium_monitoring": true
+          },
+          "evidence": {
+            "cor": 1,
+            "loe": "A"
+          }
+        }
+      ]
+    },
+
+    "ALCOHOL_REDUCTION": {
+      "recommendations": [
+        {
+          "rule_id": "ALCOHOL_1",
+          "condition": "patient_alcohol_consumption == true",
+          "intervention": "alcohol_reduction_or_abstinence",
+          "targets": {
+            "women_max_drinks_per_day": 1,
+            "men_max_drinks_per_day": 2,
+            "preferred_goal": "abstinence"
+          },
+          "clinical_purpose": [
+            "prevent_elevated_bp",
+            "treat_elevated_bp",
+            "treat_hypertension"
+          ],
+          "evidence": {
+            "cor": 1,
+            "loe": "A"
+          }
+        }
+      ]
+    },
+
+    "PHYSICAL_ACTIVITY": {
+      "recommendations": [
+        {
+          "rule_id": "EXERCISE_1",
+          "condition": "true",
+          "intervention": "structured_exercise_program",
+          "components": [
+            "aerobic_exercise",
+            "resistance_training"
+          ],
+          "clinical_purpose": [
+            "prevent_elevated_bp",
+            "treat_elevated_bp",
+            "treat_hypertension"
+          ],
+          "evidence": {
+            "cor": 1,
+            "loe": "A"
+          }
+        }
+      ]
+    },
+
+    "STRESS_REDUCTION": {
+      "recommendations": [
+        {
+          "rule_id": "STRESS_1",
+          "condition": "true",
+          "intervention": "transcendental_meditation",
+          "use_case": "adjunct",
+          "clinical_purpose": [
+            "prevent_elevated_bp",
+            "treat_elevated_bp",
+            "treat_hypertension"
+          ],
+          "evidence": {
+            "cor": 2.5,
+            "loe": "B-R"
+          }
+        },
+
+        {
+          "rule_id": "STRESS_2",
+          "condition": "true",
+          "intervention": "breathing_techniques_or_yoga",
+          "use_case": "adjunct",
+          "clinical_purpose": [
+            "prevent_elevated_bp",
+            "treat_elevated_bp",
+            "treat_hypertension"
+          ],
+          "evidence": {
+            "cor": 2.5,
+            "loe": "B-R"
+          }
+        }
+      ]
+    }
+  },
+
+  "global_rule_properties": {
+    "applicability": "adults_with_or_without_hypertension",
+    "mode": "lifestyle_and_psychosocial_modification",
+    "system_layer_mapping": {
+      "Domain": "lifestyle_interventions",
+      "Orchestration": "patient_behavior_plans",
+      "DecisionEngine": "adjunct_recommendation_ranking",
+      "CareLifecycle": "long_term_prevention_phase",
+      "PatientLayer": "education_and_guidance"
+    }
+  }
+}

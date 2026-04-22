@@ -1,0 +1,162 @@
+{
+  "module": "HTN_LIFESTYLE_AND_STRESS_REDUCTION",
+  "version": "1.0",
+
+  "interventions": {
+    "WEIGHT_LOSS": {
+      "description": "Target weight reduction for BP improvement",
+      "guideline": {
+        "COR": "1",
+        "LOE": "A"
+      },
+      "target": {
+        "type": "relative_weight_loss",
+        "value": ">=5_percent_body_weight"
+      },
+      "eligibility": {
+        "requires": "overweight_or_obesity == true"
+      }
+    },
+
+    "DIET_DASH": {
+      "description": "Heart-healthy dietary pattern",
+      "guideline": {
+        "COR": "1",
+        "LOE": "A"
+      },
+      "pattern": "DASH_DIET",
+      "recommendation_strength": "strong"
+    },
+
+    "SODIUM_RESTRICTION": {
+      "description": "Sodium intake reduction",
+      "guideline": {
+        "COR": "1",
+        "LOE": "A"
+      },
+      "targets": {
+        "standard": "<=2300_mg_per_day",
+        "ideal": "<=1500_mg_per_day"
+      },
+      "monitoring": {
+        "type": "dietary_assessment"
+      }
+    },
+
+    "POTASSIUM_SUBSTITUTION": {
+      "description": "Use of potassium-based salt substitutes",
+      "guideline": {
+        "COR": "2a",
+        "LOE": "A"
+      },
+      "allowed": true,
+      "contraindications": [
+        "CKD",
+        "hyperkalemia_risk",
+        "potassium_sparing_medications"
+      ],
+      "safety_check_required": true
+    },
+
+    "DIETARY_POTASSIUM": {
+      "description": "Moderate dietary potassium intake",
+      "guideline": {
+        "COR": "1",
+        "LOE": "A"
+      },
+      "target": "moderate_intake",
+      "contraindications": [
+        "CKD",
+        "hyperkalemia"
+      ]
+    },
+
+    "ALCOHOL_RESTRICTION": {
+      "description": "Alcohol limitation for BP control",
+      "guideline": {
+        "COR": "1",
+        "LOE": "A"
+      },
+      "limits": {
+        "female": "<=1_drink_per_day",
+        "male": "<=2_drinks_per_day"
+      },
+      "alternative": "abstinence_preferred"
+    },
+
+    "PHYSICAL_ACTIVITY": {
+      "description": "Structured exercise program",
+      "guideline": {
+        "COR": "1",
+        "LOE": "A"
+      },
+      "types": [
+        "aerobic_training",
+        "resistance_training"
+      ],
+      "frequency": "regular_structured_program",
+      "safety_check_required": true
+    },
+
+    "MINDFULNESS_MEDITATION": {
+      "description": "Stress reduction via transcendental meditation",
+      "guideline": {
+        "COR": "2b",
+        "LOE": "B-R"
+      },
+      "status": "reasonable_option",
+      "type": "transcendental_meditation"
+    },
+
+    "BREATHING_YOGA": {
+      "description": "Breathing control or yoga for stress reduction",
+      "guideline": {
+        "COR": "2b",
+        "LOE": "B-R"
+      },
+      "status": "reasonable_option",
+      "types": [
+        "breathing_control",
+        "yoga"
+      ]
+    }
+  },
+
+  "safety_overrides": {
+    "POTASSIUM_RELATED": {
+      "trigger_conditions": [
+        "CKD == true",
+        "hyperkalemia == true",
+        "potassium_sparing_drugs == true"
+      ],
+      "action": "DISABLE_POTASSIUM_INTERVENTIONS"
+    }
+  },
+
+  "clinical_context_rules": {
+    "apply_to_all": [
+      "assess_baseline_BP",
+      "assess_comorbidities",
+      "assess_medication_list"
+    ],
+    "requires_patient_stratification": true
+  },
+
+  "care_lifecycle_mapping": {
+    "prevention": [
+      "WEIGHT_LOSS",
+      "DIET_DASH",
+      "SODIUM_RESTRICTION",
+      "PHYSICAL_ACTIVITY",
+      "STRESS_INTERVENTIONS"
+    ],
+    "treatment_support": [
+      "SODIUM_RESTRICTION",
+      "ALCOHOL_RESTRICTION",
+      "PHYSICAL_ACTIVITY"
+    ],
+    "maintenance": [
+      "ALL_INTERVENTIONS"
+    ]
+  }
+}

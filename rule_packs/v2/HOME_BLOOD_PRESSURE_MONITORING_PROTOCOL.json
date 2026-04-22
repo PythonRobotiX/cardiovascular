@@ -1,0 +1,60 @@
+{
+  "module": "HOME_BLOOD_PRESSURE_MONITORING_PROTOCOL",
+  "version": "1.0",
+
+  "purpose": "Standardize accuracy requirements for home blood pressure measurement devices and cuff selection",
+
+  "device_validation_rules": [
+    {
+      "rule_id": "HBPM_DEVICE_1",
+      "requirement": "Blood pressure device must be clinically validated for accuracy",
+      "validation_source": "https://www.validatebp.org",
+      "condition": "device_validation_status == 'unverified'",
+      "action": "REJECT_FOR_CLINICAL_USE"
+    },
+    {
+      "rule_id": "HBPM_DEVICE_2",
+      "requirement": "Only validated BP devices are permitted for clinical decision-making",
+      "condition": "device_validation_status == 'validated'",
+      "action": "APPROVED_FOR_HBPM"
+    }
+  ],
+
+  "cuff_size_rules": [
+    {
+      "rule_id": "HBPM_CUFF_1",
+      "requirement": "Cuff size must match patient arm circumference",
+      "condition": "cuff_size != arm_circumference_category",
+      "action": "INVALID_MEASUREMENT_RISK"
+    },
+    {
+      "rule_id": "HBPM_CUFF_2",
+      "requirement": "Correct cuff size is mandatory for accurate BP measurement",
+      "condition": "cuff_size == correct_for_arm",
+      "action": "VALID_MEASUREMENT_ELIGIBLE"
+    }
+  ],
+
+  "measurement_quality_flags": {
+    "high_risk_invalid_reading": [
+      "device_validation_status == 'unverified'",
+      "cuff_size_mismatch == true"
+    ]
+  },
+
+  "safety_engine_integration": {
+    "device_warning_level": {
+      "unvalidated_device": "HIGH_BIAS_RISK",
+      "validated_device": "LOW_BIAS_RISK"
+    },
+    "cuff_warning_level": {
+      "incorrect_cuff_size": "HIGH_MEASUREMENT_ERROR_RISK"
+    }
+  },
+
+  "ontology_tags": [
+    "HBPM_DEVICE_VALIDATION",
+    "CUFF_SIZE_ACCURACY",
+    "MEASUREMENT_BIAS_CONTROL"
+  ]
+}

@@ -1,0 +1,86 @@
+{
+  "module": "BLOOD_PRESSURE_THRESHOLD_EQUIVALENCY_ENGINE",
+  "version": "1.0",
+
+  "description": "Maps equivalent hypertension thresholds across Office BP, Home BP (HBPM), Daytime ABPM, Nighttime ABPM, and 24-hour ABPM to enable unified diagnostic classification across measurement modalities.",
+
+  "threshold_equivalency_matrix": [
+    {
+      "reference_label": "NORMAL_BP",
+      "office_bp": { "systolic": 120, "diastolic": 80 },
+      "hbpm": { "systolic": 120, "diastolic": 80 },
+      "abpm_daytime": { "systolic": 120, "diastolic": 80 },
+      "abpm_nighttime": { "systolic": 100, "diastolic": 65 },
+      "abpm_24h": { "systolic": 115, "diastolic": 75 },
+
+      "clinical_classification": "NORMAL"
+    },
+
+    {
+      "reference_label": "ELEVATED_BP_STAGE_1",
+      "office_bp": { "systolic": 130, "diastolic": 80 },
+      "hbpm": { "systolic": 130, "diastolic": 80 },
+      "abpm_daytime": { "systolic": 130, "diastolic": 80 },
+      "abpm_nighttime": { "systolic": 110, "diastolic": 65 },
+      "abpm_24h": { "systolic": 125, "diastolic": 75 },
+
+      "clinical_classification": "ELEVATED_BP"
+    },
+
+    {
+      "reference_label": "HYPERTENSION_STAGE_1",
+      "office_bp": { "systolic": 140, "diastolic": 90 },
+      "hbpm": { "systolic": 135, "diastolic": 85 },
+      "abpm_daytime": { "systolic": 135, "diastolic": 85 },
+      "abpm_nighttime": { "systolic": 120, "diastolic": 70 },
+      "abpm_24h": { "systolic": 130, "diastolic": 80 },
+
+      "clinical_classification": "HYPERTENSION_STAGE_1"
+    },
+
+    {
+      "reference_label": "HYPERTENSION_STAGE_2",
+      "office_bp": { "systolic": 160, "diastolic": 100 },
+      "hbpm": { "systolic": 145, "diastolic": 90 },
+      "abpm_daytime": { "systolic": 145, "diastolic": 90 },
+      "abpm_nighttime": { "systolic": 140, "diastolic": 85 },
+      "abpm_24h": { "systolic": 145, "diastolic": 90 },
+
+      "clinical_classification": "HYPERTENSION_STAGE_2"
+    }
+  ],
+
+  "measurement_types": {
+    "OFFICE_BP": "clinic measurement",
+    "HBPM": "home blood pressure monitoring",
+    "ABPM_DAYTIME": "ambulatory daytime average",
+    "ABPM_NIGHTTIME": "ambulatory nighttime average",
+    "ABPM_24H": "24-hour ambulatory average"
+  },
+
+  "normalization_engine_rules": [
+    {
+      "rule_id": "BP_EQ_1",
+      "input_priority": "ABPM_24H",
+      "fallback_order": [
+        "ABPM_DAYTIME",
+        "HBPM",
+        "OFFICE_BP"
+      ],
+      "logic": "Use ABPM_24H as gold standard when available"
+    },
+
+    {
+      "rule_id": "BP_EQ_2",
+      "logic": "Convert all BP readings into equivalent classification band before diagnostic decisioning"
+    }
+  ],
+
+  "clinical_usage_layer_mapping": {
+    "Domain_Layer": "standardized classification input",
+    "Event_Engine": "trend normalization across modalities",
+    "Interpretation_Engine": "consistent diagnosis across measurement types",
+    "Safety_Engine": "unified escalation thresholds",
+    "Orchestration_Engine": "treatment eligibility decisions"
+  }
+}

@@ -1,0 +1,116 @@
+{
+  "module": "HTN_INITIAL_LAB_AND_DIAGNOSTICS",
+  "version": "1.0",
+
+  "trigger_condition": {
+    "description": "Initial hypertension diagnosis confirmed in adult patient",
+    "condition": "hypertension_diagnosed == true"
+  },
+
+  "recommended_workup": {
+    "laboratory_tests": [
+      {
+        "test": "complete_blood_count",
+        "purpose": "baseline hematologic status and anemia/thrombocytopenia screening"
+      },
+      {
+        "test": "serum_electrolytes",
+        "purpose": "evaluate sodium, potassium, metabolic abnormalities"
+      },
+      {
+        "test": "serum_creatinine",
+        "purpose": "assess renal function and CKD baseline"
+      },
+      {
+        "test": "lipid_profile",
+        "purpose": "ASCVD risk stratification"
+      },
+      {
+        "test": "glucose_or_HbA1c",
+        "purpose": "diabetes screening and metabolic risk"
+      },
+      {
+        "test": "thyroid_stimulating_hormone",
+        "purpose": "exclude thyroid-related secondary hypertension"
+      },
+      {
+        "test": "urinalysis",
+        "purpose": "detect proteinuria, hematuria, renal disease clues"
+      },
+      {
+        "test": "urine_albumin_to_creatinine_ratio",
+        "purpose": "early kidney damage detection and CKD staging"
+      }
+    ],
+
+    "diagnostic_procedures": [
+      {
+        "procedure": "12_lead_ECG",
+        "purpose": "detect LVH, arrhythmias, ischemic changes, baseline cardiac risk"
+      }
+    ]
+  },
+
+  "clinical_intent_layer": {
+    "function": "baseline_risk_and_secondary_causes_assessment",
+    "outputs": [
+      "cardiovascular_risk_profile",
+      "renal_function_baseline",
+      "metabolic_status",
+      "secondary_hypertension_clues",
+      "target_organ_damage_screening"
+    ]
+  },
+
+  "care_lifecycle_integration": {
+    "phase": "Initial Diagnosis",
+    "next_phase": "Risk Stratification",
+
+    "state_update_trigger": {
+      "condition": "all_or_partial_workup_completed == true",
+      "effect": "enhance_patient_risk_state_model"
+    }
+  },
+
+  "orchestration_rules": [
+    {
+      "rule_id": "HTN_LAB_1",
+      "trigger": "hypertension_diagnosed == true",
+      "action": "order_initial_workup_panel",
+      "priority": "HIGH"
+    }
+  ],
+
+  "navigation_logic": {
+    "care_setting": "outpatient_initial_workup",
+    "provider_type": [
+      "primary_care",
+      "internal_medicine"
+    ],
+    "escalation_condition": {
+      "trigger": "abnormal_critical_results_detected == true",
+      "route_to": [
+        "cardiology",
+        "nephrology"
+      ]
+    }
+  },
+
+  "safety_layer_inputs": {
+    "flags_detected_by_workup": [
+      "CKD_suspected_if_creatinine_abnormal",
+      "diabetes_if_HbA1c_elevated",
+      "dyslipidemia_if_lipid_abnormal",
+      "thyroid_related_htn_if_TSH_abnormal",
+      "end_organ_damage_if_ECG_abnormal_or_proteinuria_present"
+    ]
+  },
+
+  "decision_engine_inputs": {
+    "feeds_into": [
+      "risk_stratification_engine",
+      "treatment_decision_engine",
+      "secondary_hypertension_workup_engine"
+    ]
+  }
+}

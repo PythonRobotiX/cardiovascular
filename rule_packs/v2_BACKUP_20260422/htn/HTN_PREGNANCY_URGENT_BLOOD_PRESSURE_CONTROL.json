@@ -1,0 +1,139 @@
+{
+  "module": "HTN_PREGNANCY_URGENT_BLOOD_PRESSURE_CONTROL",
+  "version": "1.2",
+
+  "clinical_context": {
+    "activation_condition": "severe_hypertension == true OR hypertensive_emergency_suspected == true",
+    "severity_definition": {
+      "systolic_bp": ">= 160",
+      "diastolic_bp": ">= 110"
+    }
+  },
+
+  "intravenous_agents": {
+
+    "LABETALOL_IV": {
+      "mechanism_class": "alpha_beta_blocker",
+      "role": "first_line_acute",
+
+      "dosing_protocol": {
+        "initial_bolus_mg": "10–20",
+        "repeat_bolus_mg": "20–80",
+        "repeat_interval_min": "10–30",
+        "max_cumulative_mg": 300,
+        "infusion_mg_per_min": "1–3"
+      },
+
+      "onset_of_action": "1–2 minutes",
+
+      "clinical_effects": [
+        "reduced_tachycardia_incidence",
+        "rapid_bp_control"
+      ],
+
+      "contraindications": [
+        "asthma",
+        "heart_block",
+        "bradycardia",
+        "decompensated_heart_failure",
+        "myocardial_disease"
+      ]
+    },
+
+    "HYDRALAZINE_IV_IM": {
+      "mechanism_class": "direct_arteriolar_vasodilator",
+      "role": "alternative_first_line",
+
+      "dosing_protocol": {
+        "initial_dose_mg": 5,
+        "repeat_dose_mg": "5–10",
+        "repeat_interval_min": "20–40",
+        "max_cumulative_mg": 20,
+        "infusion_mg_per_hour": "0.5–10"
+      },
+
+      "onset_of_action": "10–20 minutes",
+
+      "clinical_risks": [
+        "maternal_hypotension",
+        "headache",
+        "reflex_tachycardia",
+        "abnormal_fetal_heart_rate_tracing"
+      ],
+
+      "risk_profile": "higher_adverse_effect_rate_compared_to_labetalol_or_nifedipine"
+    }
+  },
+
+  "oral_emergency_agents": {
+
+    "NIFEDIPINE_IMMEDIATE_RELEASE": {
+      "mechanism_class": "calcium_channel_blocker",
+      "role": "oral_emergency_option",
+
+      "dosing_protocol": {
+        "initial_dose_mg": "10–20",
+        "repeat_interval_min": 20,
+        "maintenance_interval_h": "2–6",
+        "max_daily_mg": 180
+      },
+
+      "onset_of_action": "5–10 minutes",
+
+      "clinical_effects": [
+        "rapid_bp_reduction",
+        "possible_reflex_tachycardia",
+        "headache"
+      ],
+
+      "contraindications_or_cautions": [
+        "use_with_caution_in_tachycardia"
+      ]
+    }
+  },
+
+  "agent_selection_logic": [
+
+    {
+      "rule_id": "URGENT_1",
+      "condition": "pregnancy_severe_htn == true AND asthma == false AND cardiac_contraindications == false",
+      "preferred_agent": "LABETALOL_IV"
+    },
+
+    {
+      "rule_id": "URGENT_2",
+      "condition": "fetal_status_concern == true OR labetalol_contraindicated == true",
+      "preferred_agent": "HYDRALAZINE_IV_IM"
+    },
+
+    {
+      "rule_id": "URGENT_3",
+      "condition": "IV_access_not_available == true AND severe_htn == true",
+      "preferred_agent": "NIFEDIPINE_IMMEDIATE_RELEASE"
+    }
+  ],
+
+  "safety_constraints": {
+
+    "monitoring_required": [
+      "continuous_bp_monitoring",
+      "fetal_heart_rate_monitoring",
+      "maternal_symptom_tracking"
+    ],
+
+    "avoid_overcorrection": {
+      "rule": "avoid_rapid_bp_drop",
+      "risk": "uteroplacental_hypoperfusion"
+    }
+  },
+
+  "clinical_positioning": {
+    "system_layer": "acute_emergency_management_engine",
+    "maps_to": [
+      "Care Lifecycle → Complication Management",
+      "Safety Engine → Critical Priority",
+      "Orchestration → Inpatient Emergency Pathway",
+      "Navigation → Hospital / MFM / ICU routing"
+    ]
+  }
+}

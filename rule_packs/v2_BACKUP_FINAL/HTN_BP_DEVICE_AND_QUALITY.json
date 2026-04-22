@@ -1,0 +1,99 @@
+{
+  "rule_pack_id": "HTN_BP_DEVICE_AND_QUALITY_001",
+  "title": "Recommendations for Use of Blood Pressure Measurement Devices and Quality Assurance Standards",
+  "cor": null,
+  "loe": null,
+
+  "clinical_intent": "ensure_accurate_and_standardized_blood_pressure_measurement",
+
+  "measurement_device_recommendation": {
+    "preferred_device": {
+      "type": "oscillometric_device",
+      "priority": 1,
+      "reason": "higher_standardization_and_reproducibility_across_settings"
+    },
+    "alternative_device": {
+      "type": "auscultatory_device",
+      "priority": 2,
+      "note": "acceptable_but_less_preferred_for_standardized_clinical_measurement"
+    }
+  },
+
+  "measurement_methodology_considerations": {
+    "aobp_vs_office_bp_variability": {
+      "finding": "significant_difference_between_automated_office_bp_and_manual_or_standard_in_office_measurements",
+      "clinical_implication": "bp_values_are_method_dependent_and_not_directly_interchangeable",
+      "system_requirement": "measurement_method_must_be_stored_with_each_bp_value"
+    }
+  },
+
+  "quality_assurance_and_training": {
+    "required_training": true,
+    "target_personnel": [
+      "clinicians",
+      "nursing_staff",
+      "clinical_support_staff"
+    ],
+
+    "training_components": [
+      "standardized_bp_measurement_technique",
+      "proper_patient_positioning",
+      "appropriate_cuff_size_selection",
+      "device_calibration_and_usage",
+      "environmental_standardization_for_measurement"
+    ],
+
+    "competency_reassessment": {
+      "required": true,
+      "interval_months": {
+        "min": 6,
+        "max": 12
+      },
+      "purpose": "ensure_measurement_accuracy_and_reduce_observer_variability"
+    }
+  },
+
+  "data_integrity_requirements": {
+    "mandatory_metadata_fields": [
+      "device_type",
+      "measurement_method",
+      "setting_type",
+      "observer_status"
+    ],
+
+    "interpretation_rule": "blood_pressure_values_must_always_be_interpreted_with_measurement_context"
+  },
+
+  "ontology_layer_mapping": {
+    "defined_concepts": [
+      "oscillometric_bp_measurement",
+      "auscultatory_bp_measurement",
+      "automated_office_bp",
+      "measurement_variability",
+      "bp_measurement_bias"
+    ]
+  },
+
+  "decision_engine_impact": {
+    "direct_treatment_change": false,
+    "affects_input_confidence": true,
+    "affects_diagnostic_threshold_reliability": true,
+    "notes": "measurement_quality_modifies_certainty_of_hypertension_diagnosis"
+  },
+
+  "execution_layer_requirements": {
+    "device_standardization_required": true,
+    "training_program_required": true,
+    "ongoing_audit_cycle_required": true
+  },
+
+  "safety_engine_implications": {
+    "risk_type": "diagnostic_misclassification_due_to_measurement_error",
+    "potential_harm": [
+      "false_diagnosis_of_hypertension",
+      "missed_hypertension_diagnosis",
+      "inappropriate_treatment_initiation_or_omission"
+    ],
+    "mitigation_strategy": "enforce_standardized_device_use_and_staff_competency_validation"
+  }
+}

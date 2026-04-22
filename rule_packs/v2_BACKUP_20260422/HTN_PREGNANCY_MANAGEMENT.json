@@ -1,0 +1,144 @@
+{
+  "module": "HTN_PREGNANCY_MANAGEMENT",
+  "version": "2025_guideline_extracted",
+
+  "rules": [
+
+    {
+      "id": "HTN_PREG_001_FIRST_LINE_THERAPY",
+      "type": "treatment_recommendation",
+      "population": "pregnant_or_planning_pregnancy_with_hypertension",
+
+      "action": {
+        "preferred_agents": [
+          "labetalol",
+          "extended_release_nifedipine"
+        ]
+      },
+
+      "intent": "blood_pressure_control_with_fetal_safety",
+
+      "evidence": {
+        "COR": "I",
+        "LOE": "A"
+      },
+
+      "system_mapping": {
+        "decision_engine": true,
+        "drug_safety_engine": true,
+        "orchestration_engine": true
+      }
+    },
+
+    {
+      "id": "HTN_PREG_002_ANTENATAL_ASPIRIN",
+      "type": "preventive_therapy",
+
+      "population": "pregnant_or_planning_pregnancy_with_hypertension",
+
+      "action": {
+        "therapy": "low_dose_aspirin",
+        "dose": "81 mg/day",
+        "goal": "reduce_preeclampsia_risk"
+      },
+
+      "evidence": {
+        "COR": "I",
+        "LOE": "B-R"
+      },
+
+      "system_mapping": {
+        "preventive_engine": true,
+        "risk_reduction_module": true
+      }
+    },
+
+    {
+      "id": "HTN_PREG_003_SEVERE_RANGE_URGENCY_TREATMENT",
+      "type": "acute_hypertension_protocol",
+
+      "trigger": {
+        "SBP": ">=160",
+        "DBP": ">=110",
+        "confirmation_required": true,
+        "repeat_window_minutes": 15
+      },
+
+      "action": {
+        "require_medication": true,
+        "goal_BP": "<160/<110",
+        "time_to_target_minutes": "30-60"
+      },
+
+      "intent": "prevent_maternal_fetal_emergency",
+
+      "system_mapping": {
+        "safety_engine": true,
+        "emergency_escalation": true,
+        "care_lifecycle_state": "CRITICAL_HYPERTENSION"
+      }
+    },
+
+    {
+      "id": "HTN_PREG_004_CHRONIC_HTN_TREATMENT_TARGET",
+      "type": "chronic_disease_management",
+
+      "definition": {
+        "chronic_htn": {
+          "criteria": [
+            "pre_pregnancy_htn",
+            "OR_SBP_140_159_or_DBP_90_109_before_20_weeks"
+          ]
+        }
+      },
+
+      "action": {
+        "target_BP": "<140/<90",
+        "therapy_required": true
+      },
+
+      "goal": "reduce_maternal_perinatal_morbidity_mortality",
+
+      "system_mapping": {
+        "orchestration_engine": true,
+        "long_term_management": true
+      }
+    },
+
+    {
+      "id": "HTN_PREG_005_CONTRAINDICATED_DRUGS",
+      "type": "drug_safety_constraint",
+
+      "forbidden_agents": [
+        "atenolol",
+        "ACE_inhibitors",
+        "ARB",
+        "direct_renin_inhibitors",
+        "nitroprusside",
+        "mineralocorticoid_receptor_antagonists"
+      ],
+
+      "reason": "fetal_harm",
+
+      "classification": "COR_III_HARM",
+
+      "system_mapping": {
+        "drug_interaction_engine": true,
+        "safety_engine": true,
+        "prescribing_blocker": true
+      }
+    }
+
+  ],
+
+  "global_notes": {
+    "definition_chronic_htn": {
+      "criteria": [
+        "preexisting_diagnosis_of_htn",
+        "OR_SBP_>=140_or_DBP_>=90_on_two_occasions_>=4h_apart_before_20_weeks"
+      ]
+    },
+
+    "reference_tables": ["ACOG_Table_22", "ACOG_Table_23"]
+  }
+}

@@ -1,0 +1,128 @@
+{
+  "module": "HTN_MEDICATION_INITIATION",
+  "version": "1.0",
+
+  "rules": [
+    {
+      "rule_id": "INIT_GENERAL_HTN_1",
+      "population": "GENERAL_HYPERTENSION",
+      "evidence": {
+        "COR": "1",
+        "LOE": "A"
+      },
+      "condition": {
+        "SBP_gte": 140,
+        "OR_DBP_gte": 90
+      },
+      "action": {
+        "start_medication": true,
+        "first_line": "per_guideline_preferred_antihypertensives"
+      }
+    },
+
+    {
+      "rule_id": "INIT_CVD_1",
+      "population": "CLINICAL_CVD_PRESENT",
+      "evidence": {
+        "COR": "1",
+        "LOE": "A/C-LD"
+      },
+      "condition": {
+        "SBP_gte": 130,
+        "OR_DBP_gte": 80
+      },
+      "action": {
+        "start_medication": true,
+        "priority": "HIGH_RISK",
+        "intensification_allowed": true
+      }
+    },
+
+    {
+      "rule_id": "INIT_DIABETES_CKD_HIGH_RISK_1",
+      "population": "DIABETES_OR_CKD_OR_HIGH_RISK",
+      "risk_definition": {
+        "ASCVD_RISK_GTE": 0.075
+      },
+      "evidence": {
+        "COR": "1",
+        "LOE": "A/C-LD"
+      },
+      "condition": {
+        "SBP_gte": 130,
+        "OR_DBP_gte": 80
+      },
+      "action": {
+        "start_medication": true,
+        "priority": "MODERATE_TO_HIGH_RISK"
+      }
+    },
+
+    {
+      "rule_id": "INIT_LOW_RISK_DELAYED_1",
+      "population": "LOW_RISK",
+      "risk_definition": {
+        "ASCVD_RISK_LT": 0.075
+      },
+      "evidence": {
+        "COR": "1",
+        "LOE": "B-R"
+      },
+      "condition": {
+        "SBP_gte": 130,
+        "OR_DBP_gte": 80,
+        "lifestyle_trial_duration_months_gte": 3
+      },
+      "action": {
+        "start_medication": true,
+        "note": "after_failed_lifestyle_modification",
+        "require_shared_decision": true
+      }
+    }
+  ],
+
+  "global_logic": {
+    "evaluation_order": [
+      "CLINICAL_CVD_PRESENT",
+      "DIABETES_OR_CKD_OR_HIGH_RISK",
+      "LOW_RISK",
+      "GENERAL_HYPERTENSION"
+    ],
+
+    "override_priority": {
+      "CLINICAL_CVD_PRESENT": "HIGHEST_PRIORITY",
+      "DIABETES_OR_CKD_OR_HIGH_RISK": "HIGH_PRIORITY",
+      "LOW_RISK": "DEFERRED_IF_LIFESTYLE_ACTIVE"
+    }
+  },
+
+  "safety_constraints": {
+    "always_check_before_starting_medication": [
+      "secondary_hypertension_suspected",
+      "pregnancy_status",
+      "contraindications_to_first_line_agents",
+      "renal_function",
+      "electrolytes"
+    ]
+  },
+
+  "clinical_outputs": {
+    "start_medication": {
+      "trigger": true,
+      "system_actions": [
+        "generate_prescription_recommendation",
+        "schedule_follow_up",
+        "initiate_monitoring_plan"
+      ]
+    },
+
+    "no_immediate_medication": {
+      "trigger": "lifestyle_trial_active",
+      "system_actions": [
+        "lifestyle_counseling_plan",
+        "bp_recheck_schedule",
+        "risk_reassessment_timer"
+      ]
+    }
+  }
+}

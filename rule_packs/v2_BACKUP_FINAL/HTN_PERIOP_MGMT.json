@@ -1,0 +1,150 @@
+{
+  "module": "HTN_PERIOPERATIVE_MANAGEMENT",
+  "context": {
+    "applies_to": [
+      "hypertension",
+      "scheduled_surgery",
+      "perioperative_period"
+    ],
+    "surgery_type": ["major", "elective_major"]
+  },
+
+  "rules": [
+
+    {
+      "id": "HTN-PERI-001",
+      "type": "medication_continuation",
+      "title": "Continue chronic beta-blockers",
+      "recommendation": "Continue beta-blockers throughout perioperative period",
+      "conditions": {
+        "has_hypertension": true,
+        "scheduled_surgery": true,
+        "on_beta_blocker_chronic": true
+      },
+      "action": {
+        "continue_medication": ["beta_blocker"]
+      },
+      "priority": "high",
+      "cor": "1",
+      "loe": "B-NR"
+    },
+
+    {
+      "id": "HTN-PERI-002",
+      "type": "medication_continuation",
+      "title": "Continue most antihypertensives",
+      "recommendation": "Continue most antihypertensive medications perioperatively",
+      "conditions": {
+        "has_hypertension": true,
+        "scheduled_surgery": "elective_major"
+      },
+      "action": {
+        "continue_medication": ["antihypertensives_general"]
+      },
+      "priority": "moderate",
+      "cor": "2a",
+      "loe": "C-EO"
+    },
+
+    {
+      "id": "HTN-PERI-003",
+      "type": "medication_adjustment",
+      "title": "Consider holding ACEi/ARB preoperatively",
+      "recommendation": "Consider discontinuing ACEi or ARB before surgery to reduce intraoperative hypotension",
+      "conditions": {
+        "has_hypertension": true,
+        "scheduled_surgery": "major",
+        "on_medication": ["ACEi", "ARB"]
+      },
+      "action": {
+        "consider_hold_medication": ["ACEi", "ARB"]
+      },
+      "priority": "moderate",
+      "cor": "2b",
+      "loe": "B-R"
+    },
+
+    {
+      "id": "HTN-PERI-004",
+      "type": "surgical_decision",
+      "title": "Consider deferring surgery for severe hypertension",
+      "recommendation": "Defer elective surgery if BP is severely elevated",
+      "conditions": {
+        "scheduled_surgery": "elective_major",
+        "systolic_bp": ">=180",
+        "diastolic_bp": ">=110"
+      },
+      "modifiers": {
+        "high_risk_patient": true
+      },
+      "action": {
+        "consider_defer_surgery": true,
+        "optimize_bp_control": true
+      },
+      "priority": "high",
+      "cor": "2b",
+      "loe": "C-LD"
+    },
+
+    {
+      "id": "HTN-PERI-005",
+      "type": "safety",
+      "title": "Avoid abrupt discontinuation of beta-blockers or clonidine",
+      "recommendation": "Abrupt discontinuation may cause rebound hypertension",
+      "conditions": {
+        "has_hypertension": true,
+        "scheduled_surgery": true,
+        "on_medication": ["beta_blocker", "clonidine"]
+      },
+      "action": {
+        "avoid_abrupt_discontinuation": ["beta_blocker", "clonidine"]
+      },
+      "priority": "critical",
+      "harm": true,
+      "cor": "3",
+      "loe": "B-NR"
+    },
+
+    {
+      "id": "HTN-PERI-006",
+      "type": "safety",
+      "title": "Do not initiate beta-blocker on day of surgery",
+      "recommendation": "Avoid starting beta-blockers on the day of surgery in naïve patients",
+      "conditions": {
+        "has_hypertension": true,
+        "scheduled_surgery": true,
+        "beta_blocker_naive": true,
+        "day_of_surgery": true
+      },
+      "action": {
+        "do_not_start_medication": ["beta_blocker"]
+      },
+      "priority": "critical",
+      "harm": true,
+      "cor": "3",
+      "loe": "B-R"
+    }
+
+  ],
+
+  "integration": {
+    "domain_layer": [
+      "perioperative_htn_context_detection"
+    ],
+    "decision_engine": [
+      "medication_continue_or_hold",
+      "drug_initiation_rules"
+    ],
+    "safety_engine": [
+      "rebound_hypertension_prevention",
+      "perioperative_mortality_risk"
+    ],
+    "care_lifecycle_engine": [
+      "preoperative_phase_management"
+    ],
+    "navigation_layer": [
+      "surgical_clearance_decision",
+      "delay_vs_proceed_logic"
+    ]
+  }
+}

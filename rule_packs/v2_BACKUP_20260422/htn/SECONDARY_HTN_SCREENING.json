@@ -1,0 +1,122 @@
+{
+  "rule_pack_id": "SECONDARY_HTN_SCREENING",
+  "domain": "Hypertension",
+  "module": "Secondary_Hypertension_Screening",
+
+  "definition": {
+    "purpose": "Identify clinical features suggestive of secondary hypertension and trigger appropriate diagnostic or referral pathways."
+  },
+
+  "input_features": [
+    "drug_resistant_htn",
+    "drug_induced_htn",
+    "abrupt_onset_htn",
+    "early_onset_htn_lt_30",
+    "loss_of_bp_control",
+    "accelerated_htn",
+    "malignant_htn",
+    "diastolic_htn_age_ge_65",
+    "unexplained_hypokalemia",
+    "sleep_apnea_symptoms",
+    "adrenal_nodule_present",
+    "early_onset_stroke_history",
+    "family_history_primary_aldosteronism"
+  ],
+
+  "decision_logic": {
+    "secondary_htn_suspicion_rule": {
+      "type": "ANY",
+      "condition_set": "input_features",
+      "output": "suspected_secondary_hypertension"
+    }
+  },
+
+  "state_transitions": {
+    "NO_RISK_FEATURES": {
+      "next_step": "continue_standard_htn_management"
+    },
+
+    "SUSPECTED_SECONDARY_HTN": {
+      "next_step": "secondary_htn_screening_workup",
+      "actions": [
+        "screen_primary_aldosteronism",
+        "evaluate_secondary_causes_of_htn"
+      ]
+    },
+
+    "POSITIVE_SCREENING_TEST": {
+      "next_step": "specialist_referral",
+      "referral_target": [
+        "endocrinology",
+        "hypertension_specialist",
+        "nephrology"
+      ]
+    },
+
+    "NEGATIVE_SCREENING_TEST": {
+      "next_step": "optimize_antihypertensive_therapy"
+    }
+  },
+
+  "screening_branch_logic": {
+    "if_any_feature_present": {
+      "condition": "ANY(input_features == true)",
+      "action": "initiate_secondary_htn_screening"
+    },
+
+    "if_screening_completed": {
+      "positive_result": {
+        "action": "refer_to_secondary_htn_specialist"
+      },
+      "negative_result": {
+        "action": "escalate_medication_therapy"
+      }
+    }
+  },
+
+  "clinical_actions": {
+    "initiate_secondary_htn_screening": [
+      "order_aldosterone_renin_ratio",
+      "evaluate_renal_artery_stenosis_if_indicated",
+      "consider_endocrine_workup"
+    ],
+
+    "optimize_antihypertensive_therapy": [
+      "adjust_medication_regimen",
+      "reinforce_adherence",
+      "monitor_bp_response"
+    ],
+
+    "refer_to_secondary_htn_specialist": [
+      "endocrinology_referral",
+      "hypertension_clinic_referral",
+      "advanced_workup_initiation"
+    ]
+  },
+
+  "risk_engine_hooks": {
+    "high_priority_triggers": [
+      "accelerated_htn",
+      "malignant_htn",
+      "hypokalemia",
+      "abrupt_onset_htn"
+    ],
+    "priority_boost": "elevate_safety_score"
+  },
+
+  "care_lifecycle_mapping": {
+    "entry_states": [
+      "suspected_secondary_hypertension"
+    ],
+    "exit_states": [
+      "controlled_primary_htn",
+      "confirmed_secondary_htn_pathway"
+    ]
+  },
+
+  "navigation_mapping": {
+    "suspected_secondary_htn": "outpatient_specialist_evaluation",
+    "positive_workup": "specialty_referral",
+    "severe_features": "urgent_evaluation_or_ed"
+  }
+}

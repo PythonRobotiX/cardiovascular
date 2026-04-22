@@ -1,0 +1,146 @@
+{
+  "module": "PREECLAMPSIA_DIAGNOSTIC_ENGINE",
+  "version": "1.0",
+
+  "activation_context": {
+    "gestational_threshold_weeks": ">= 20",
+    "baseline_condition": "previously_normal_bp == true OR chronic_htn == false"
+  },
+
+  "blood_pressure_criteria": {
+    "diagnostic_threshold": {
+      "systolic_bp": ">= 140",
+      "diastolic_bp": ">= 90",
+      "confirmation_requirement": "2 readings at least 4 hours apart"
+    },
+
+    "severe_hypertension": {
+      "systolic_bp": ">= 160",
+      "diastolic_bp": ">= 110",
+      "confirmation_requirement": "can_be_confirmed_within_minutes_if_clinically_needed"
+    }
+  },
+
+  "proteinuria_criteria": {
+    "primary_thresholds": [
+      ">= 300 mg / 24-hour urine",
+      "protein_creatinine_ratio >= 0.3"
+    ],
+    "secondary_threshold": {
+      "dipstick": ">= 2+",
+      "note": "only if quantitative testing unavailable"
+    }
+  },
+
+  "organ_dysfunction_criteria": {
+
+    "hematologic": {
+      "thrombocytopenia": "< 100e9 / L"
+    },
+
+    "renal": {
+      "serum_creatinine": "> 1.1 mg/dL",
+      "doubling_rule": "2x baseline creatinine without alternative renal disease"
+    },
+
+    "hepatic": {
+      "transaminases": ">= 2x upper_normal_limit"
+    },
+
+    "pulmonary": {
+      "pulmonary_edema": true
+    },
+
+    "neurologic": {
+      "refractory_headache": "unresponsive_to_medication AND no_alternative_diagnosis",
+      "visual_symptoms": true
+    }
+  },
+
+  "diagnostic_logic": {
+
+    "rule_1_classic_preeclampsia": {
+      "condition": "gestational_age_weeks >= 20 AND hypertension_present == true AND proteinuria_present == true",
+      "output": "PREECLAMPSIA"
+    },
+
+    "rule_2_preeclampsia_without_proteinuria": {
+      "condition": "gestational_age_weeks >= 20 AND hypertension_present == true AND proteinuria_present == false AND (thrombocytopenia == true OR renal_insufficiency == true OR hepatic_dysfunction == true OR pulmonary_edema == true OR neurologic_symptoms == true)",
+      "output": "PREECLAMPSIA"
+    },
+
+    "rule_3_severe_preeclampsia_acceleration": {
+      "condition": "severe_hypertension == true",
+      "output": "SEVERE_PREECLAMPSIA_SUSPECTED",
+      "note": "diagnosis can be confirmed rapidly to enable urgent treatment"
+    }
+  },
+
+  "severity_classification": {
+
+    "mild_preeclampsia": {
+      "criteria": "meets_preeclampsia_criteria AND no_severe_features"
+    },
+
+    "severe_preeclampsia": {
+      "criteria": "any_severe_feature_present == true",
+      "severe_features": [
+        "SBP >= 160",
+        "DBP >= 110",
+        "thrombocytopenia",
+        "renal_insufficiency",
+        "hepatic_dysfunction",
+        "pulmonary_edema",
+        "neurologic_symptoms"
+      ]
+    }
+  },
+
+  "safety_engine_hooks": [
+
+    {
+      "rule_id": "PREECLAMPSIA_SAFETY_1",
+      "condition": "neurologic_symptoms == true",
+      "priority": "CRITICAL",
+      "action": "IMMEDIATE_ESCALATION"
+    },
+
+    {
+      "rule_id": "PREECLAMPSIA_SAFETY_2",
+      "condition": "pulmonary_edema == true",
+      "priority": "CRITICAL",
+      "action": "INPATIENT_MANAGEMENT_REQUIRED"
+    },
+
+    {
+      "rule_id": "PREECLAMPSIA_SAFETY_3",
+      "condition": "thrombocytopenia == true OR hepatic_dysfunction == true OR renal_insufficiency == true",
+      "priority": "HIGH",
+      "action": "MFM_OR_HOSPITAL_EVALUATION"
+    }
+  ],
+
+  "care_lifecycle_mapping": {
+
+    "entry_state": "GESTATIONAL_HYPERTENSION_OR_HIGH_RISK_PREGNANCY",
+
+    "state_transitions": [
+      "INITIAL_DIAGNOSIS",
+      "DIAGNOSTIC_EXPANSION",
+      "PREECLAMPSIA_CONFIRMED",
+      "SEVERE_PREECLAMPSIA",
+      "COMPLICATION_MANAGEMENT"
+    ]
+  },
+
+  "clinical_positioning": {
+    "system_layer_mapping": {
+      "Domain": "disease classification engine",
+      "Ontology": "clinical definitions of organ dysfunction",
+      "Event Logic": "BP + symptom evolution",
+      "Interpretation": "syndrome-level diagnosis",
+      "Safety": "severe feature escalation",
+      "Care Lifecycle": "state transitions"
+    }
+  }
+}
